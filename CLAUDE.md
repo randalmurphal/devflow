@@ -233,3 +233,76 @@ go get github.com/xanzy/go-gitlab
 - **flowgraph**: Foundation layer (graph orchestration)
 - **task-keeper**: Product layer (commercial SaaS)
 - **ai-devtools/ensemble**: Python reference implementation
+
+---
+
+## Specification Documents
+
+Complete specifications are in `.spec/`. **Read these before implementing.**
+
+```
+.spec/
+├── PLANNING.md              # Overall roadmap and design philosophy
+├── DECISIONS.md             # ADR index with decision summaries
+├── SESSION_PROMPT.md        # Current session handoff/instructions
+├── decisions/               # 20 Architecture Decision Records
+│   ├── 001-020              # Git, Claude CLI, Transcripts, Artifacts, Integration
+├── phases/                  # 6 implementation phases (6 weeks)
+│   ├── phase-1-git-primitives.md
+│   ├── phase-2-claude-cli.md
+│   ├── phase-3-transcripts.md
+│   ├── phase-4-artifacts.md
+│   ├── phase-5-workflow-nodes.md
+│   └── phase-6-polish.md
+├── features/                # 8 feature specifications
+│   ├── worktree-management.md
+│   ├── git-operations.md
+│   ├── claude-cli.md
+│   ├── prompt-loading.md
+│   ├── transcript-recording.md
+│   ├── transcript-replay.md
+│   ├── artifact-storage.md
+│   ├── dev-workflow-nodes.md
+│   └── nodes/               # 7 node specifications
+│       ├── generate-spec.md
+│       ├── implement.md
+│       ├── review-code.md
+│       ├── fix-findings.md
+│       ├── create-pr.md
+│       ├── run-tests.md
+│       └── check-lint.md
+├── knowledge/
+│   └── INTEGRATION_PATTERNS.md  # flowgraph integration patterns
+└── tracking/
+    ├── PROGRESS.md          # Implementation progress
+    └── CHANGELOG.md         # Change history
+```
+
+### Implementation Order
+
+Follow phases in order. Each phase builds on the previous:
+
+| Phase | Focus | Dependencies |
+|-------|-------|--------------|
+| 1 | Git Primitives | None (foundation) |
+| 2 | Claude CLI | None (parallel with Phase 1) |
+| 3 | Transcripts | None (parallel) |
+| 4 | Artifacts | None (parallel) |
+| 5 | Workflow Nodes | Phases 1-4 complete |
+| 6 | Polish | Phase 5 complete |
+
+### Key Design Decisions
+
+- **Shell out to git** (ADR-001): Don't use go-git for worktrees, shell out to git binary
+- **Shell out to claude** (ADR-006): Wrap the claude CLI, don't use API directly
+- **JSON files for storage** (ADR-012): Simple file-based storage, no database
+- **grep for search** (ADR-014): Use grep for transcript search, not a search engine
+- **Context injection** (ADR-018): Pass services via context.Context, not state
+
+### Before Implementing
+
+1. Read the relevant ADR in `decisions/`
+2. Read the feature spec in `features/`
+3. Read the phase spec in `phases/`
+4. Check `PLANNING.md` for design philosophy
+5. Update `tracking/PROGRESS.md` as you complete items
