@@ -1,160 +1,248 @@
 # devflow Implementation Session
 
-## Status: Phase 6 - Polish & Integration
+## Status: BLOCKED on flowgraph Phase 6
 
-Phases 1-5 complete. All core functionality implemented and tested. Ready for final polish.
-
----
-
-## Quick Context
-
-**devflow** = Go library providing dev workflow primitives for AI agents:
-- Git operations (worktrees, commits, PRs)
-- Claude CLI wrapper
-- Transcript management
-- Artifact storage
-- Pre-built flowgraph nodes
-
-**Depends on**: flowgraph (graph orchestration engine)
+**Phases 1-5 complete. Phase 6 BLOCKED pending flowgraph LLM enhancements.**
 
 ---
 
-## What's Been Done
+## Critical Context
 
-### ✅ Phase 1: Git Primitives (Complete)
-| File | Purpose |
-|------|---------|
-| `git.go` | GitContext - worktrees, branches, commits, push/pull |
-| `branch.go` | BranchNamer - naming conventions |
-| `commit.go` | CommitMessage - conventional commits |
-| `pr.go` | PRProvider interface, PRBuilder |
-| `github.go` | GitHub PR provider |
-| `gitlab.go` | GitLab MR provider |
-| `errors.go` | Error types |
+devflow depends on flowgraph for ALL LLM-related functionality. The current devflow implementation has duplicate LLM code that must be removed once flowgraph is ready.
 
-### ✅ Phase 2: Claude CLI Wrapper (Complete)
-| File | Purpose |
-|------|---------|
-| `claude.go` | ClaudeCLI - Run with options, output parsing |
-| `prompt.go` | PromptLoader - Go templates with caching |
-| `context.go` | ContextBuilder - file context with limits |
-| `prompts/` | Default prompt templates |
-
-### ✅ Phase 3: Transcript Management (Complete)
-| File | Purpose |
-|------|---------|
-| `transcript.go` | Transcript, Turn, ToolCall types |
-| `transcript_store.go` | FileTranscriptStore - TranscriptManager impl |
-| `transcript_search.go` | TranscriptSearcher - grep/ripgrep search |
-| `transcript_view.go` | TranscriptViewer - display/export |
-
-### ✅ Phase 4: Artifact Management (Complete)
-| File | Purpose |
-|------|---------|
-| `artifact.go` | ArtifactManager - save/load with compression |
-| `artifact_types.go` | ReviewResult, TestOutput, LintOutput |
-| `artifact_lifecycle.go` | LifecycleManager - cleanup/archive |
-
-### ✅ Phase 5: Workflow Nodes (Complete)
-| File | Purpose |
-|------|---------|
-| `context.go` | Service injection helpers (With/From pattern) |
-| `state.go` | DevState, state components, Ticket type |
-| `nodes.go` | 9 workflow nodes + wrappers |
-
-**Nodes implemented:**
-- `CreateWorktreeNode` - Creates isolated git worktree
-- `GenerateSpecNode` - Ticket → Technical spec
-- `ImplementNode` - Spec → Code changes
-- `ReviewNode` - Code → Review results
-- `FixFindingsNode` - Review → Fixed code
-- `RunTestsNode` - Execute test suite
-- `CheckLintNode` - Run linters
-- `CreatePRNode` - Code → Pull request
-- `CleanupNode` - Cleanup worktree
-
-**Wrappers:**
-- `WithRetry` - Add retry logic
-- `WithTranscript` - Record to transcript
-- `WithTiming` - Track duration
+**READ FIRST**: `.spec/INTEGRATION_REQUIREMENTS.md` - defines the flowgraph contract and escalation protocol.
 
 ---
 
 ## Current State
 
-```bash
-# All tests pass
-go test -race ./...
-# ok  github.com/anthropic/devflow  11.666s  coverage: 52.3%
+| Phase | Status | Notes |
+|-------|--------|-------|
+| 1 - Git Primitives | ✅ Complete | GitContext, worktrees, branches, PRs |
+| 2 - Claude CLI | ✅ Complete | **HAS DUPLICATE CODE - must migrate to flowgraph** |
+| 3 - Transcripts | ✅ Complete | Recording, search, view, export |
+| 4 - Artifacts | ✅ Complete | Save, load, lifecycle, types |
+| 5 - Workflow Nodes | ✅ Complete | 9 nodes, state, context injection |
+| 6 - Polish | 🔲 BLOCKED | Waiting on flowgraph Phase 6 |
 
-# No vet warnings
-go vet ./...
+**Tests**: All passing with race detection (`go test -race ./...`)
+**Coverage**: 52.3% (target: 80%)
+
+---
+
+## BLOCKING ISSUE: flowgraph Integration
+
+### What's Blocking
+
+flowgraph Phase 6 must complete before devflow can:
+1. Remove duplicate ClaudeCLI code
+2. Migrate ContextBuilder to flowgraph
+3. Migrate PromptLoader to flowgraph
+4. Update nodes to use flowgraph's llm.Client
+
+### Check flowgraph Status
+
+```bash
+# Check if flowgraph Phase 6 is complete
+cat ../flowgraph/.spec/tracking/PROGRESS.md | grep -A5 "Phase 6"
 ```
 
-**Files**: 28 Go files
-**Test Coverage**: 52.3% (acceptable - many paths need real git/Claude)
+### If flowgraph Phase 6 is NOT complete:
+
+**STOP. Do not implement LLM features in devflow.**
+
+Options:
+1. Work on flowgraph Phase 6 first
+2. Work on devflow features that don't require LLM (notifications, test coverage)
+3. Ask user what to prioritize
+
+### If flowgraph Phase 6 IS complete:
+
+Proceed with devflow Phase 6 integration work. See "Phase 6 Tasks" below.
 
 ---
 
-## 🔲 Phase 6: Polish & Integration (Current Work)
+## Phase 6 Tasks (When Unblocked)
 
-See `.spec/phases/phase-6-polish.md` for complete details.
-
-### Priority 1: Documentation
+### Priority 1: Remove Duplicate LLM Code
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Update godoc comments | Pending | All exported types/funcs |
-| Ensure examples compile | Pending | In godoc and README |
-| Update README.md | Pending | Quick start, installation |
-| Update docs/ directory | Pending | Getting started, guides |
+| Verify flowgraph has ContextBuilder | Pending | Or migrate devflow's |
+| Verify flowgraph has PromptLoader | Pending | Or migrate devflow's |
+| Delete `claude.go` | Pending | Replace with flowgraph import |
+| Delete `claude_test.go` | Pending | Tests in flowgraph |
+| Update context injection | Pending | Use `llm.Client` not `*ClaudeCLI` |
+| Update all nodes | Pending | Use flowgraph's LLM client |
+| Update DevServices | Pending | Use flowgraph's types |
 
-### Priority 2: Examples
-
-| Task | Status | Notes |
-|------|--------|-------|
-| `examples/ticket-to-pr/` | Pending | Full workflow demo |
-| `examples/code-review/` | Pending | PR review demo |
-| `examples/custom-workflow/` | Pending | Custom state/nodes |
-
-### Priority 3: CI/CD
+### Priority 2: Implement Notifications
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `.github/workflows/ci.yml` | Pending | Test + vet on push |
-| Add golangci-lint | Optional | Code quality |
+| Create `notification.go` | Pending | Notifier interface |
+| Implement SlackNotifier | Pending | Webhook-based |
+| Implement WebhookNotifier | Pending | Generic HTTP |
+| Implement LogNotifier | Pending | For testing |
+| Implement MultiNotifier | Pending | Fan-out |
+| Create NotifyNode | Pending | Workflow node |
+| Add context injection | Pending | WithNotifier/NotifierFromContext |
+| Write tests | Pending | 80%+ coverage |
 
-### Priority 4: Release Prep
+### Priority 3: Test Coverage (52.3% → 80%)
+
+| File | Current | Target | Notes |
+|------|---------|--------|-------|
+| `git.go` | ~60% | 85% | Add worktree edge cases |
+| `nodes.go` | ~50% | 80% | Mock LLM tests |
+| `context.go` | ~40% | 85% | Injection tests |
+| `transcript*.go` | ~55% | 85% | Compression, concurrent |
+| `artifact*.go` | ~55% | 85% | Lifecycle tests |
+| `state.go` | ~60% | 90% | Validation combos |
+
+### Priority 4: Documentation
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `CHANGELOG.md` | Pending | v0.1.0 changes |
-| `LICENSE` | Pending | MIT license |
-| Version tagging | Pending | v0.1.0 tag |
+| Update README.md | Pending | flowgraph dependency |
+| Update CLAUDE.md | Pending | Integration section |
+| Create FLOWGRAPH_INTEGRATION.md | Pending | How to use together |
+| Create NOTIFICATIONS.md | Pending | Notification guide |
+| Create examples/ | Pending | Working examples |
+| Update godoc comments | Pending | All exported types |
 
 ---
 
-## Getting Started with Phase 6
+## Files That WILL BE DELETED (After flowgraph Integration)
 
-1. **Read** `.spec/phases/phase-6-polish.md` for full requirements
-2. **Verify** tests pass: `go test -race ./...`
-3. **Start** with documentation (godoc comments on key types)
-4. **Create** example applications
-5. **Add** CI workflow
-6. **Prepare** for release
-7. **Update** `.spec/tracking/PROGRESS.md` as you complete items
+**Do not add features to these files - they're being removed:**
+
+- `claude.go` - Moving to flowgraph
+- `claude_test.go` - Moving to flowgraph
+- `prompt.go` - Moving to flowgraph
+- `prompt_test.go` - Moving to flowgraph
 
 ---
 
-## Key Files to Know
+## Files to Modify (After flowgraph Integration)
 
-| File | When to Read |
-|------|--------------|
-| `.spec/phases/phase-6-polish.md` | Phase 6 requirements |
-| `.spec/tracking/PROGRESS.md` | Current progress |
-| `CLAUDE.md` | Project overview for agents |
-| `docs/API_REFERENCE.md` | API documentation |
-| `docs/ARCHITECTURE.md` | Design patterns |
+### context.go
+
+Remove:
+- ContextBuilder (migrate to flowgraph)
+- FileSelector (migrate to flowgraph)
+- WithClaudeCLI, ClaudeFromContext, MustClaudeFromContext
+- WithPromptLoader, PromptLoaderFromContext, MustPromptLoaderFromContext
+
+Add:
+- WithLLMClient, LLMFromContext, MustLLMFromContext (using flowgraph's llm.Client)
+
+### nodes.go
+
+Update all nodes to use:
+```go
+// OLD
+claude := ClaudeFromContext(ctx)
+result, err := claude.Run(ctx, prompt, opts...)
+
+// NEW
+client := llm.ClientFromContext(ctx)
+resp, err := client.Complete(ctx, llm.CompletionRequest{...})
+```
+
+### DevServices struct
+
+```go
+// OLD
+type DevServices struct {
+    Git         *GitContext
+    Claude      *ClaudeCLI        // DELETE
+    Transcripts TranscriptManager
+    Artifacts   *ArtifactManager
+    Prompts     *PromptLoader     // DELETE
+}
+
+// NEW
+type DevServices struct {
+    Git         *GitContext
+    LLM         llm.Client        // flowgraph type
+    Transcripts TranscriptManager
+    Artifacts   *ArtifactManager
+    Notifier    Notifier          // NEW
+}
+```
+
+---
+
+## Non-Blocked Work (Can Do Now)
+
+These tasks don't depend on flowgraph:
+
+1. **Notification system** - Design and implement
+2. **Test coverage for Git ops** - Real git tests
+3. **Test coverage for Transcripts** - Compression, search
+4. **Test coverage for Artifacts** - Lifecycle, archive
+5. **Documentation** (partial) - Architecture, git ops, transcripts
+
+---
+
+## Escalation Protocol
+
+### If you encounter a missing flowgraph feature:
+
+1. Check `.spec/INTEGRATION_REQUIREMENTS.md` for the required features list
+2. Do NOT implement in devflow
+3. Document in `.spec/tracking/BLOCKERS.md`
+4. Inform user:
+
+```
+BLOCKER: devflow integration requires flowgraph feature: [feature]
+
+This feature must be added to flowgraph, not devflow.
+Options:
+1. Switch to flowgraph and implement the feature
+2. Continue with non-blocked devflow work
+3. Wait for flowgraph completion
+
+Which would you prefer?
+```
+
+---
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `.spec/INTEGRATION_REQUIREMENTS.md` | **READ FIRST** - flowgraph contract |
+| `.spec/tracking/PROGRESS.md` | Implementation progress |
+| `CLAUDE.md` | Project overview |
+| `../flowgraph/CLAUDE.md` | flowgraph status |
+| `../flowgraph/.spec/SESSION_PROMPT.md` | flowgraph Phase 6 tasks |
+
+---
+
+## Previous Session Summary
+
+**Session**: Phase 5 Implementation + Integration Analysis
+
+**Completed**:
+- All Phase 5 workflow nodes implemented
+- Context injection helpers
+- State types and validation
+- 60+ test cases
+- Integration requirements analysis
+- Identified flowgraph dependency for LLM code
+
+**Key Finding**:
+devflow has duplicate LLM code that should live in flowgraph:
+- `ClaudeCLI` wrapper
+- `ContextBuilder`
+- `PromptLoader`
+
+flowgraph Phase 6 is adding these features. Once complete, devflow must migrate.
+
+**Tests**: All passing
+**Coverage**: 52.3%
 
 ---
 
@@ -162,58 +250,30 @@ See `.spec/phases/phase-6-polish.md` for complete details.
 
 ### Code Quality
 - [ ] All tests passing
-- [ ] No golangci-lint warnings (if added)
+- [ ] 80%+ test coverage
 - [ ] No race conditions (tested with -race)
+- [ ] No duplicate LLM code (uses flowgraph)
 
-### Documentation Quality
-- [ ] All public APIs have godoc comments
-- [ ] Examples compile and work
-- [ ] README is accurate and helpful
-- [ ] CLAUDE.md reflects current state
+### Integration Quality
+- [ ] Uses flowgraph llm.Client
+- [ ] No devflow ClaudeCLI
+- [ ] No devflow PromptLoader
+- [ ] ContextBuilder in flowgraph or using flowgraph's
 
-### Release Quality
-- [ ] Version tagged (v0.1.0)
-- [ ] CHANGELOG complete
-- [ ] LICENSE present
-- [ ] CI passing
+### Feature Complete
+- [ ] Notification system implemented
+- [ ] All nodes working with flowgraph LLM
 - [ ] Examples working
 
----
+### Documentation Quality
+- [ ] All public APIs have godoc
+- [ ] Examples compile and work
+- [ ] README accurate
+- [ ] CLAUDE.md up to date
+- [ ] Integration guide complete
 
-## Questions?
-
-If something is unclear:
-1. Check related ADRs in `.spec/decisions/`
-2. Check `docs/` for existing documentation
-3. Check `knowledge/INTEGRATION_PATTERNS.md` for patterns
-4. Default to simplicity
-5. Flag in PROGRESS.md if blocked
-
----
-
-## Previous Session Summary
-
-**Session**: Phase 5 Implementation (Workflow Nodes)
-
-**Completed**:
-- Context injection helpers (`context.go`)
-  - `With*/From*` pattern for all services
-  - `DevServices` bundle with `InjectAll`
-  - `MustFrom*` variants that panic
-- State types (`state.go`)
-  - `DevState` with embedded components
-  - `GitState`, `SpecState`, `ImplementState`, etc.
-  - `Ticket` type for input data
-  - `Validate()` with requirements
-- Workflow nodes (`nodes.go`)
-  - 9 nodes matching Phase 5 spec
-  - Node wrappers: `WithRetry`, `WithTranscript`, `WithTiming`
-  - `ReviewRouter` for conditional routing
-- Tests (`nodes_test.go`)
-  - 60+ test cases
-  - All passing with race detection
-
-**Tests**: All passing
-**Coverage**: 52.3%
-
-**Next**: Phase 6 - Polish & Integration
+### Release Quality
+- [ ] CHANGELOG.md complete
+- [ ] LICENSE present
+- [ ] CI/CD configured
+- [ ] v0.1.0 ready

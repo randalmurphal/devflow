@@ -213,14 +213,45 @@
 
 **Phase 5 Status**: Complete - all tests passing
 
-### Phase 6: Polish & Integration (Pending)
+### Phase 6: Polish & Integration (BLOCKED)
 
-| Task | Status | File | Notes |
-|------|--------|------|-------|
-| Documentation review | Pending | | |
-| API cleanup | Pending | | |
-| Examples | Pending | | |
-| Release preparation | Pending | | |
+**BLOCKED BY**: flowgraph Phase 6 (LLM enhancements)
+
+See `.spec/INTEGRATION_REQUIREMENTS.md` for full details.
+
+#### Blocked Tasks (Require flowgraph)
+
+| Task | Status | Blocked By | Notes |
+|------|--------|------------|-------|
+| Remove claude.go | BLOCKED | flowgraph LLM client | Duplicate code |
+| Remove prompt.go | BLOCKED | flowgraph prompt loading | Duplicate code |
+| Migrate ContextBuilder | BLOCKED | flowgraph Phase 6 | Move to flowgraph |
+| Update nodes to use flowgraph | BLOCKED | All above | LLM integration |
+| Update DevServices | BLOCKED | All above | Type changes |
+
+#### Non-Blocked Tasks (Can Do Now)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Notification system | Pending | Notifier interface + implementations |
+| Test coverage (git ops) | Pending | Real git tests |
+| Test coverage (transcripts) | Pending | Compression, search |
+| Test coverage (artifacts) | Pending | Lifecycle, archive |
+| Test coverage (state) | Pending | Validation combos |
+| Partial documentation | Pending | Non-LLM docs |
+
+#### Post-Integration Tasks
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Update README.md | Pending | flowgraph dependency |
+| Update CLAUDE.md | Pending | Integration section |
+| Create FLOWGRAPH_INTEGRATION.md | Pending | How to use together |
+| Create NOTIFICATIONS.md | Pending | Notification guide |
+| Create examples/ | Pending | Working examples |
+| CI/CD setup | Pending | GitHub Actions |
+| CHANGELOG.md | Pending | v0.1.0 |
+| LICENSE | Pending | MIT |
 
 ---
 
@@ -275,12 +306,49 @@
 | 2025-12-19 | nodes.go: ReviewRouter for conditional routing |
 | 2025-12-19 | nodes_test.go: Unit tests passing |
 | 2025-12-19 | **Phase 5 implementation complete** |
+| 2025-12-19 | Integration analysis with flowgraph |
+| 2025-12-19 | Identified duplicate LLM code (claude.go, prompt.go, ContextBuilder) |
+| 2025-12-19 | Created INTEGRATION_REQUIREMENTS.md |
+| 2025-12-19 | Updated SESSION_PROMPT.md with blockers |
+| 2025-12-19 | **Phase 6 BLOCKED on flowgraph Phase 6** |
 
 ---
 
 ## Blockers
 
-None - Phases 1-5 complete, ready for Phase 6 (Polish & Integration).
+### CRITICAL: flowgraph Phase 6 Dependency
+
+devflow Phase 6 is **BLOCKED** until flowgraph Phase 6 completes.
+
+**What's Blocking**:
+1. flowgraph needs full Claude CLI support (JSON output, session management, etc.)
+2. flowgraph needs ContextBuilder (or devflow migrates theirs)
+3. flowgraph needs PromptLoader (or devflow migrates theirs)
+
+**Impact**:
+- Cannot remove duplicate LLM code from devflow
+- Cannot update nodes to use flowgraph's llm.Client
+- Cannot complete API cleanup
+
+**Resolution**:
+- Complete flowgraph Phase 6 first
+- OR work on non-blocked devflow tasks (notifications, test coverage)
+
+See `.spec/INTEGRATION_REQUIREMENTS.md` for the full contract.
+
+---
+
+## Test Coverage Gap
+
+| Current | Target | Gap |
+|---------|--------|-----|
+| 52.3% | 80% | 27.7% |
+
+Priority files for coverage improvement:
+1. `git.go` - Core functionality
+2. `nodes.go` - Workflow nodes
+3. `context.go` - Service injection
+4. `state.go` - State validation
 
 ---
 
