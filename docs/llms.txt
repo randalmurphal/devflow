@@ -1,0 +1,38 @@
+# devflow Documentation Index
+
+> Go library for AI-powered development workflows: git operations, Claude CLI integration, transcript management, artifact storage.
+
+## Quick Start
+- CLAUDE.md (180 lines) - Project overview, quick reference
+- docs/OVERVIEW.md (300 lines) - Vision, core components, use cases
+
+## Architecture
+- docs/ARCHITECTURE.md (400 lines) - System design, type definitions
+- docs/API_REFERENCE.md (400 lines) - Complete public API
+
+## By Component
+
+### Git Operations
+- CLAUDE.md#git-operations - Quick examples
+- docs/API_REFERENCE.md#git-operations - Full API
+
+### Claude CLI
+- CLAUDE.md#claude-cli - Quick examples
+- docs/API_REFERENCE.md#claude-cli - Full API
+
+### Transcripts
+- CLAUDE.md#transcripts - Quick examples
+- docs/ARCHITECTURE.md#transcript-storage - Storage format
+- docs/API_REFERENCE.md#transcript-management - Full API
+
+### Artifacts
+- CLAUDE.md#artifacts - Quick examples
+- docs/API_REFERENCE.md#artifact-management - Full API
+
+### flowgraph Integration
+- CLAUDE.md#integration-with-flowgraph - Node examples
+- docs/API_REFERENCE.md#pre-built-workflow-nodes - Available nodes
+
+## Related
+- flowgraph/ - Foundation layer (graph orchestration)
+- task-keeper/ - Product layer (commercial SaaS)
