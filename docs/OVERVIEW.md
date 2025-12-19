@@ -5,7 +5,7 @@
 devflow is a Go library providing development workflow primitives for AI-powered automation. It bridges the gap between generic graph orchestration (flowgraph) and specific development tasks:
 
 - **Git operations** - Worktrees, branches, commits, PRs
-- **LLM integration** - Claude CLI wrapper with dev-specific conventions
+- **LLM integration** - Uses flowgraph's `llm.Client` interface
 - **Transcript management** - Recording and storing AI conversations
 - **Artifact storage** - Managing files generated during workflows
 
@@ -27,9 +27,10 @@ These are common patterns that shouldn't be reimplemented for each project.
 
 devflow provides reusable primitives:
 - **GitContext** - Worktree management, commit, push, PR creation
-- **ClaudeCLI** - Claude invocation with context injection, transcripts
+- **LLM Client** - Uses flowgraph's `llm.Client` for Claude integration
 - **TranscriptManager** - Structured storage of AI conversations
 - **ArtifactManager** - Run artifact storage with compression
+- **Notifier** - Workflow event notifications (Slack, webhook)
 
 ---
 
@@ -73,37 +74,39 @@ pr, err := git.CreatePR(devflow.PROptions{
 err = git.CleanupWorktree(worktree)
 ```
 
-### ClaudeCLI
+### LLM Client (via flowgraph)
 
-Wraps the Claude CLI with development-specific conventions.
+devflow uses flowgraph's `llm.Client` interface for LLM integration.
 
 **Key capabilities**:
-- **Context injection** - Pass files to Claude
+- **Model selection** - Use different Claude models
 - **Working directory** - Run in specific directory
-- **Transcript capture** - Record all turns
+- **Context injection** - Via devflow context helpers
 - **Token tracking** - Monitor usage
-- **Timeout handling** - Graceful timeouts
+- **Session management** - Multi-turn conversations
 
 ```go
-claude := devflow.NewClaudeCLI(devflow.ClaudeConfig{
-    Timeout:   5 * time.Minute,
-    Model:     "claude-sonnet-4-20250514",
-})
+import "github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
 
-result, err := claude.Run(ctx, "Implement the login endpoint",
-    devflow.WithSystemPrompt(systemPrompt),
-    devflow.WithContext("auth.go", "middleware.go"),
-    devflow.WithWorkDir(worktree),
-    devflow.WithMaxTurns(10),
+// Create LLM client
+client := llm.NewClaudeCLI(
+    llm.WithModel("claude-sonnet-4-20250514"),
+    llm.WithWorkdir(worktree),
 )
 
+// Run completion
+result, err := client.Complete(ctx, llm.CompletionRequest{
+    SystemPrompt: systemPrompt,
+    Messages:     []llm.Message{{Role: llm.RoleUser, Content: "Implement the login endpoint"}},
+})
+
 // Result
-result.Output       // Final response text
-result.TokensIn     // Input tokens consumed
-result.TokensOut    // Output tokens generated
-result.Transcript   // All conversation turns
-result.Files        // Files created/modified
-result.Duration     // Total execution time
+result.Content           // Final response text
+result.Usage.InputTokens // Input tokens consumed
+result.Usage.OutputTokens // Output tokens generated
+
+// Inject into context for workflow nodes
+ctx = devflow.WithLLMClient(ctx, client)
 ```
 
 ### TranscriptManager
@@ -187,6 +190,37 @@ for _, info := range infos {
 deleted, err := artifacts.Cleanup()
 ```
 
+### Notifier
+
+Sends workflow event notifications.
+
+**Key capabilities**:
+- **Slack** - Webhook-based Slack notifications
+- **Webhooks** - Generic HTTP webhooks
+- **Multiple targets** - Combine multiple notifiers
+- **Context injection** - Use in workflow nodes
+
+```go
+// Create notifiers
+slack := devflow.NewSlackNotifier(webhookURL,
+    devflow.WithSlackChannel("#dev-alerts"),
+    devflow.WithSlackUsername("devflow-bot"),
+)
+
+webhook := devflow.NewWebhookNotifier(url, headers)
+
+// Combine multiple notifiers
+multi := devflow.NewMultiNotifier(slack, webhook)
+
+// Inject into context
+ctx = devflow.WithNotifier(ctx, multi)
+
+// Send notifications
+devflow.NotifyRunStarted(ctx, state)
+devflow.NotifyRunCompleted(ctx, state)
+devflow.NotifyRunFailed(ctx, state, err)
+```
+
 ---
 
 ## Workflow Integration
@@ -247,30 +281,22 @@ graph := flowgraph.NewGraph[TicketState]().
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DEVFLOW_BASE_DIR` | Base directory for runs | `.devflow` |
-| `CLAUDE_BINARY` | Path to claude CLI | `claude` |
 | `GITHUB_TOKEN` | GitHub API token | - |
 | `GITLAB_TOKEN` | GitLab API token | - |
+| `SLACK_WEBHOOK_URL` | Slack notification webhook | - |
 
-### Config File
+### Directory Structure
 
-```json
-// .devflow/config.json
-{
-  "baseDir": ".devflow",
-  "claude": {
-    "timeout": "5m",
-    "model": "claude-sonnet-4-20250514",
-    "maxTurns": 10
-  },
-  "git": {
-    "worktreeDir": ".worktrees",
-    "defaultBranch": "main"
-  },
-  "artifacts": {
-    "compressAbove": 1024,
-    "retentionDays": 30
-  }
-}
+```
+.devflow/
+├── runs/                    # Transcript and artifact storage
+│   └── run-2025-01-15-001/
+│       ├── transcript.json
+│       ├── metadata.json
+│       └── artifacts/
+├── prompts/                 # Custom prompt templates
+│   └── my-prompt.txt
+└── config.json              # Optional configuration
 ```
 
 ---
@@ -311,14 +337,15 @@ Code → Identify Issues → Plan → Refactor → Test → PR
 
 devflow uses flowgraph for:
 - Graph-based workflow definition
-- State management
-- Checkpointing
+- State management and checkpointing
 - Execution engine
+- LLM client interface (`llm.Client`)
 
 devflow adds:
-- Dev-specific operations (git, Claude)
+- Dev-specific operations (git, PRs)
 - Transcript/artifact storage
 - Pre-built workflow nodes
+- Notification system
 
 ### task-keeper (Product)
 

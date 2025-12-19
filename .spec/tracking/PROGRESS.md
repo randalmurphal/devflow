@@ -237,11 +237,13 @@ See `.spec/INTEGRATION_REQUIREMENTS.md` for full details.
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Test coverage improvement | ✅ Complete | 54.4% → 80.3% |
+| Test coverage improvement | ✅ Complete | 54.4% → 83.1% |
 | Create examples/ | ✅ Complete | examples/basic/main.go |
-| CI/CD setup | Pending | GitHub Actions |
+| CI/CD setup | ✅ Complete | GitHub Actions (test, lint, build) |
 | CHANGELOG.md | ✅ Complete | v0.1.0 |
 | LICENSE | ✅ Complete | MIT |
+| Dependabot | ✅ Complete | Go modules + GitHub Actions |
+| golangci-lint config | ✅ Complete | .golangci.yml |
 
 ---
 
@@ -321,6 +323,13 @@ See `.spec/INTEGRATION_REQUIREMENTS.md` for full details.
 | 2025-12-19 | Test coverage improved: 54.4% → 59.6% |
 | 2025-12-19 | Created LICENSE (MIT) |
 | 2025-12-19 | Created CHANGELOG.md for v0.1.0 |
+| 2025-12-19 | Created .github/workflows/ci.yml (test, lint, build) |
+| 2025-12-19 | Created .golangci.yml with linter config |
+| 2025-12-19 | Created .github/dependabot.yml |
+| 2025-12-19 | Updated README.md with correct API examples |
+| 2025-12-19 | Updated docs/OVERVIEW.md with flowgraph llm.Client |
+| 2025-12-19 | Updated docs/API_REFERENCE.md with notifications |
+| 2025-12-19 | **Phase 6 complete - all tasks done**
 
 ---
 

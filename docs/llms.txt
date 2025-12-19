@@ -1,14 +1,15 @@
 # devflow Documentation Index
 
-> Go library for AI-powered development workflows: git operations, Claude CLI integration, transcript management, artifact storage.
+> Go library for AI-powered development workflows: git operations, LLM integration via flowgraph, transcript management, artifact storage, notifications.
 
 ## Quick Start
-- CLAUDE.md (180 lines) - Project overview, quick reference
-- docs/OVERVIEW.md (300 lines) - Vision, core components, use cases
+- CLAUDE.md - Project overview, quick reference, implementation status
+- README.md - User-facing documentation with examples
+- docs/OVERVIEW.md - Vision, core components, use cases
 
 ## Architecture
-- docs/ARCHITECTURE.md (400 lines) - System design, type definitions
-- docs/API_REFERENCE.md (400 lines) - Complete public API
+- docs/ARCHITECTURE.md - System design, type definitions
+- docs/API_REFERENCE.md - Complete public API
 
 ## By Component
 
@@ -16,23 +17,26 @@
 - CLAUDE.md#git-operations - Quick examples
 - docs/API_REFERENCE.md#git-operations - Full API
 
-### Claude CLI
-- CLAUDE.md#claude-cli - Quick examples
-- docs/API_REFERENCE.md#claude-cli - Full API
+### LLM Client (via flowgraph)
+- CLAUDE.md#llm-client-via-flowgraph - Quick examples
+- docs/API_REFERENCE.md#llm-client-via-flowgraph - Context injection
 
 ### Transcripts
 - CLAUDE.md#transcripts - Quick examples
-- docs/ARCHITECTURE.md#transcript-storage - Storage format
 - docs/API_REFERENCE.md#transcript-management - Full API
 
 ### Artifacts
 - CLAUDE.md#artifacts - Quick examples
 - docs/API_REFERENCE.md#artifact-management - Full API
 
-### flowgraph Integration
+### Notifications
+- CLAUDE.md#notifications - Quick examples
+- docs/API_REFERENCE.md#notifications - Slack, webhook notifiers
+
+### Workflow Nodes
 - CLAUDE.md#integration-with-flowgraph - Node examples
-- docs/API_REFERENCE.md#pre-built-workflow-nodes - Available nodes
+- docs/API_REFERENCE.md#pre-built-workflow-nodes - All 10 nodes
 
 ## Related
-- flowgraph/ - Foundation layer (graph orchestration)
-- task-keeper/ - Product layer (commercial SaaS)
+- flowgraph - Foundation layer (graph orchestration + LLM abstraction)
+- task-keeper - Product layer (commercial SaaS)

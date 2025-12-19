@@ -125,77 +125,45 @@ Returns diff between two refs.
 
 ---
 
-## Claude CLI
+## LLM Client (via flowgraph)
 
-### NewClaudeCLI
+devflow uses flowgraph's `llm.Client` interface. See [flowgraph documentation](https://github.com/rmurphy/flowgraph) for full LLM client API.
 
-```go
-func NewClaudeCLI(config ClaudeConfig) *ClaudeCLI
-```
-
-Creates a Claude CLI wrapper.
+### Context Injection
 
 ```go
-type ClaudeConfig struct {
-    BinaryPath string        // Path to claude binary (default: "claude")
-    Model      string        // Model to use
-    Timeout    time.Duration // Default timeout
-    MaxTurns   int           // Max conversation turns
-}
+// Inject LLM client into context
+func WithLLMClient(ctx context.Context, client llm.Client) context.Context
+
+// Retrieve LLM client from context
+func LLMFromContext(ctx context.Context) llm.Client
 ```
 
----
-
-### Run
+### Quick Reference
 
 ```go
-func (c *ClaudeCLI) Run(ctx context.Context, prompt string, opts ...RunOption) (*RunResult, error)
+import "github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
+
+// Create LLM client
+client := llm.NewClaudeCLI(
+    llm.WithModel("claude-sonnet-4-20250514"),
+    llm.WithWorkdir(repoPath),
+)
+
+// Run completion
+result, err := client.Complete(ctx, llm.CompletionRequest{
+    SystemPrompt: "You are an expert Go developer",
+    Messages:     []llm.Message{{Role: llm.RoleUser, Content: "Implement the feature"}},
+})
+
+// Access results
+result.Content            // Response text
+result.Usage.InputTokens  // Input tokens
+result.Usage.OutputTokens // Output tokens
+
+// Inject into context for workflow nodes
+ctx = devflow.WithLLMClient(ctx, client)
 ```
-
-Runs Claude with the given prompt.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `ctx` | `context.Context` | Context for cancellation |
-| `prompt` | `string` | User prompt |
-| `opts` | `...RunOption` | Configuration options |
-
-**Options**:
-```go
-WithSystemPrompt(prompt string)   // Set system prompt
-WithContext(files ...string)      // Add context files
-WithWorkDir(dir string)           // Working directory
-WithMaxTurns(n int)               // Max turns
-WithTimeout(d time.Duration)      // Timeout
-```
-
-**Returns**:
-```go
-type RunResult struct {
-    Output     string        // Claude's response
-    TokensIn   int           // Input tokens
-    TokensOut  int           // Output tokens
-    Transcript *Transcript   // Full conversation
-    Files      []FileChange  // Files created/modified
-    Duration   time.Duration // Execution time
-    ExitCode   int           // Process exit code
-}
-```
-
----
-
-### RunWithFiles
-
-```go
-func (c *ClaudeCLI) RunWithFiles(
-    ctx context.Context,
-    prompt string,
-    files []string,
-    opts ...RunOption,
-) (*RunResult, error)
-```
-
-Convenience method to run with context files.
 
 ---
 
@@ -402,6 +370,62 @@ Removes artifacts older than retention period. Returns count deleted.
 
 ---
 
+## Notifications
+
+### NewSlackNotifier
+
+```go
+func NewSlackNotifier(webhookURL string, opts ...SlackOption) *SlackNotifier
+```
+
+Creates a Slack notifier.
+
+**Options**:
+```go
+WithSlackChannel(channel string)   // Override default channel
+WithSlackUsername(username string) // Bot username
+WithSlackIconEmoji(emoji string)   // Bot icon emoji
+```
+
+---
+
+### NewWebhookNotifier
+
+```go
+func NewWebhookNotifier(url string, headers map[string]string) *WebhookNotifier
+```
+
+Creates a generic webhook notifier.
+
+---
+
+### NewMultiNotifier
+
+```go
+func NewMultiNotifier(notifiers ...Notifier) *MultiNotifier
+```
+
+Combines multiple notifiers.
+
+---
+
+### Context Injection
+
+```go
+// Inject notifier into context
+func WithNotifier(ctx context.Context, n Notifier) context.Context
+
+// Retrieve notifier from context
+func NotifierFromContext(ctx context.Context) Notifier
+
+// Notification helpers
+func NotifyRunStarted(ctx context.Context, state DevState)
+func NotifyRunCompleted(ctx context.Context, state DevState)
+func NotifyRunFailed(ctx context.Context, state DevState, err error)
+```
+
+---
+
 ## Pre-built Workflow Nodes
 
 For use with flowgraph:
@@ -427,6 +451,15 @@ func CreatePRNode(ctx flowgraph.Context, state DevState) (DevState, error)
 
 // CleanupNode cleans up worktree
 func CleanupNode(ctx flowgraph.Context, state DevState) (DevState, error)
+
+// RunTestsNode runs tests
+func RunTestsNode(ctx flowgraph.Context, state DevState) (DevState, error)
+
+// CheckLintNode runs linters
+func CheckLintNode(ctx flowgraph.Context, state DevState) (DevState, error)
+
+// NotifyNode sends notifications
+func NotifyNode(ctx flowgraph.Context, state DevState) (DevState, error)
 ```
 
 ---
@@ -441,10 +474,6 @@ var (
     ErrNoPRProvider   = errors.New("no PR provider configured")
     ErrBranchExists   = errors.New("branch already exists")
 
-    // Claude
-    ErrClaudeTimeout = errors.New("claude CLI timed out")
-    ErrClaudeFailed  = errors.New("claude CLI failed")
-
     // Transcript
     ErrTranscriptNotFound = errors.New("transcript not found")
     ErrRunNotStarted      = errors.New("run not started")
@@ -452,6 +481,12 @@ var (
 
     // Artifact
     ErrArtifactNotFound = errors.New("artifact not found")
+
+    // Context
+    ErrContextTooLarge = errors.New("context exceeds size limits")
+
+    // General
+    ErrTimeout = errors.New("operation timed out")
 )
 ```
 
@@ -467,24 +502,34 @@ import (
     "log"
     "time"
 
-    "github.com/yourorg/devflow"
+    "github.com/anthropic/devflow"
+    "github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
 )
 
 func main() {
-    // Setup
+    ctx := context.Background()
+
+    // Setup services
     git, _ := devflow.NewGitContext(".")
-    claude := devflow.NewClaudeCLI(devflow.ClaudeConfig{
-        Timeout: 5 * time.Minute,
-    })
-    transcripts := devflow.NewTranscriptManager(devflow.TranscriptConfig{
-        BaseDir:  ".devflow",
-        Compress: true,
+    client := llm.NewClaudeCLI(
+        llm.WithModel("claude-sonnet-4-20250514"),
+        llm.WithWorkdir("."),
+    )
+    transcripts, _ := devflow.NewTranscriptManager(devflow.TranscriptConfig{
+        BaseDir: ".devflow",
     })
     artifacts := devflow.NewArtifactManager(devflow.ArtifactConfig{
         BaseDir: ".devflow",
     })
+    notifier := devflow.NewSlackNotifier("https://hooks.slack.com/...")
 
-    ctx := context.Background()
+    // Inject into context
+    ctx = devflow.WithGitContext(ctx, git)
+    ctx = devflow.WithLLMClient(ctx, client)
+    ctx = devflow.WithTranscriptManager(ctx, transcripts)
+    ctx = devflow.WithArtifactManager(ctx, artifacts)
+    ctx = devflow.WithNotifier(ctx, notifier)
+
     runID := "run-" + time.Now().Format("2006-01-02-150405")
 
     // Start transcript
@@ -499,11 +544,13 @@ func main() {
     }
     defer git.CleanupWorktree(worktree)
 
-    // Run Claude
-    result, err := claude.Run(ctx, "Implement a hello world endpoint",
-        devflow.WithWorkDir(worktree),
-        devflow.WithSystemPrompt("You are an expert Go developer"),
-    )
+    // Run LLM completion
+    result, err := client.Complete(ctx, llm.CompletionRequest{
+        SystemPrompt: "You are an expert Go developer",
+        Messages: []llm.Message{
+            {Role: llm.RoleUser, Content: "Implement a hello world endpoint"},
+        },
+    })
     if err != nil {
         transcripts.EndRun(runID, devflow.RunStatusFailed)
         log.Fatal(err)
@@ -511,20 +558,20 @@ func main() {
 
     // Record transcript
     transcripts.RecordTurn(runID, devflow.Turn{
-        Role:    "assistant",
-        Content: result.Output,
-        Tokens:  result.TokensOut,
+        Role:      "assistant",
+        Content:   result.Content,
+        TokensOut: result.Usage.OutputTokens,
     })
 
     // Save artifact
-    artifacts.SaveArtifact(runID, "output.txt", []byte(result.Output))
+    artifacts.SaveArtifact(runID, "output.txt", []byte(result.Content))
 
     // Commit and PR
     git.Commit("Add hello world endpoint", "main.go")
     git.Push("origin", "feature/new-feature")
     pr, _ := git.CreatePR(devflow.PROptions{
         Title: "Add hello world endpoint",
-        Body:  result.Output,
+        Body:  result.Content,
         Base:  "main",
     })
 

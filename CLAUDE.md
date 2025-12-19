@@ -303,7 +303,20 @@ result, err := graph.Execute(ctx, state)
 ```bash
 go test -race ./...                    # Unit tests
 go test -race -tags=integration ./...  # With real git/Claude
+go test -race -coverprofile=coverage.out ./...  # With coverage
 ```
+
+---
+
+## CI/CD
+
+GitHub Actions workflow (`.github/workflows/ci.yml`):
+- **Test**: Runs on Go 1.23 and 1.24 with race detection
+- **Lint**: golangci-lint with project config (`.golangci.yml`)
+- **Build**: Verifies compilation including examples
+- **Coverage**: Uploads to Codecov
+
+Dependabot configured for Go modules and GitHub Actions updates.
 
 ---
 
@@ -327,8 +340,8 @@ go get github.com/xanzy/go-gitlab
 | `docs/OVERVIEW.md` | Detailed vision and concepts |
 | `docs/ARCHITECTURE.md` | Component design, data flow |
 | `docs/API_REFERENCE.md` | Complete public API |
-| `docs/GIT_OPERATIONS.md` | Git workflow patterns |
-| `docs/TRANSCRIPT_FORMAT.md` | Transcript storage format |
+| `README.md` | User-facing documentation |
+| `CHANGELOG.md` | Version history |
 
 ---
 
@@ -411,3 +424,5 @@ All Phase 6 tasks completed:
 - ✅ Example applications (`examples/basic/main.go`)
 - ✅ Documentation polish
 - ✅ Code cleanup (removed deprecated ClaudeCLI, split large files)
+- ✅ CI/CD with GitHub Actions (test, lint, build)
+- ✅ Dependabot configuration

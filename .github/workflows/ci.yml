@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (Go ${{ matrix.go-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.23', '1.24']
+
+    steps:
+      - name: Checkout devflow
+        uses: actions/checkout@v4
+
+      - name: Checkout flowgraph
+        uses: actions/checkout@v4
+        with:
+          repository: rmurphy/flowgraph
+          path: flowgraph
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+
+      - name: Update go.mod replace directive
+        run: |
+          go mod edit -replace github.com/rmurphy/flowgraph=./flowgraph
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: matrix.go-version == '1.24'
+        with:
+          files: ./coverage.out
+          fail_ci_if_error: false
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout devflow
+        uses: actions/checkout@v4
+
+      - name: Checkout flowgraph
+        uses: actions/checkout@v4
+        with:
+          repository: rmurphy/flowgraph
+          path: flowgraph
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Update go.mod replace directive
+        run: |
+          go mod edit -replace github.com/rmurphy/flowgraph=./flowgraph
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout devflow
+        uses: actions/checkout@v4
+
+      - name: Checkout flowgraph
+        uses: actions/checkout@v4
+        with:
+          repository: rmurphy/flowgraph
+          path: flowgraph
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Update go.mod replace directive
+        run: |
+          go mod edit -replace github.com/rmurphy/flowgraph=./flowgraph
+
+      - name: Build
+        run: go build ./...
+
+      - name: Build examples
+        run: go build ./examples/...
