@@ -19,10 +19,10 @@ jobs:
 
     steps:
       - name: Checkout devflow
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Checkout flowgraph
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: rmurphy/flowgraph
           path: flowgraph
@@ -56,10 +56,10 @@ jobs:
 
     steps:
       - name: Checkout devflow
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Checkout flowgraph
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: rmurphy/flowgraph
           path: flowgraph
@@ -86,10 +86,10 @@ jobs:
 
     steps:
       - name: Checkout devflow
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Checkout flowgraph
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: rmurphy/flowgraph
           path: flowgraph
