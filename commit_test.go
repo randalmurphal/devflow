@@ -247,3 +247,20 @@ func TestDefaultCommitConfig(t *testing.T) {
 		t.Error("RequireTicketRef should be false by default")
 	}
 }
+
+func TestCommitMessage_WithTicketRefs(t *testing.T) {
+	msg := NewCommitMessage(CommitTypeFeat, "add feature").
+		WithTicketRefs("TK-100", "TK-200", "TK-300")
+
+	got := msg.String()
+
+	if !strings.Contains(got, "Refs: TK-100") {
+		t.Error("should contain TK-100")
+	}
+	if !strings.Contains(got, "Refs: TK-200") {
+		t.Error("should contain TK-200")
+	}
+	if !strings.Contains(got, "Refs: TK-300") {
+		t.Error("should contain TK-300")
+	}
+}

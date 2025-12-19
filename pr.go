@@ -85,38 +85,38 @@ const (
 
 // PRFilter configures pull request listing.
 type PRFilter struct {
-	State     PRState // Filter by state (empty = all)
-	Base      string  // Filter by base branch
-	Head      string  // Filter by head branch
-	Author    string  // Filter by author username
+	State     PRState  // Filter by state (empty = all)
+	Base      string   // Filter by base branch
+	Head      string   // Filter by head branch
+	Author    string   // Filter by author username
 	Labels    []string // Filter by labels (all must match)
-	Sort      string  // Sort field (created, updated)
-	Direction string  // Sort direction (asc, desc)
-	Limit     int     // Maximum number to return (0 = default)
+	Sort      string   // Sort field (created, updated)
+	Direction string   // Sort direction (asc, desc)
+	Limit     int      // Maximum number to return (0 = default)
 }
 
 // PullRequest represents a created pull request.
 type PullRequest struct {
-	ID          int        // PR number/ID
-	URL         string     // Web URL
-	HTMLURL     string     // Full HTML URL
-	Title       string     // PR title
-	Body        string     // PR description
-	State       PRState    // Current state
-	Draft       bool       // Whether it's a draft
-	Head        string     // Source branch
-	Base        string     // Target branch
-	CreatedAt   time.Time  // Creation time
-	UpdatedAt   time.Time  // Last update time
-	MergedAt    *time.Time // Merge time (nil if not merged)
-	MergedBy    string     // Username who merged
-	Commits     int        // Number of commits
-	Additions   int        // Lines added
-	Deletions   int        // Lines deleted
-	ChangedFiles int       // Number of files changed
-	Labels      []string   // Applied labels
-	Reviewers   []string   // Requested reviewers
-	Assignees   []string   // Assigned users
+	ID           int        // PR number/ID
+	URL          string     // Web URL
+	HTMLURL      string     // Full HTML URL
+	Title        string     // PR title
+	Body         string     // PR description
+	State        PRState    // Current state
+	Draft        bool       // Whether it's a draft
+	Head         string     // Source branch
+	Base         string     // Target branch
+	CreatedAt    time.Time  // Creation time
+	UpdatedAt    time.Time  // Last update time
+	MergedAt     *time.Time // Merge time (nil if not merged)
+	MergedBy     string     // Username who merged
+	Commits      int        // Number of commits
+	Additions    int        // Lines added
+	Deletions    int        // Lines deleted
+	ChangedFiles int        // Number of files changed
+	Labels       []string   // Applied labels
+	Reviewers    []string   // Requested reviewers
+	Assignees    []string   // Assigned users
 }
 
 // PRBuilder helps construct PR options using a fluent interface.

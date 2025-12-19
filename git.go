@@ -1,7 +1,6 @@
 package devflow
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -13,11 +12,12 @@ import (
 
 // GitContext manages git operations for a repository.
 type GitContext struct {
-	repoPath    string      // Path to the main repository
-	worktreeDir string      // Directory where worktrees are created
-	workDir     string      // Current working directory for commands (defaults to repoPath)
-	github      PRProvider  // GitHub provider (if configured)
-	gitlab      PRProvider  // GitLab provider (if configured)
+	repoPath    string        // Path to the main repository
+	worktreeDir string        // Directory where worktrees are created
+	workDir     string        // Current working directory for commands (defaults to repoPath)
+	github      PRProvider    // GitHub provider (if configured)
+	gitlab      PRProvider    // GitLab provider (if configured)
+	runner      CommandRunner // Command runner (defaults to ExecRunner)
 }
 
 // GitOption configures GitContext.
@@ -43,6 +43,7 @@ func NewGitContext(repoPath string, opts ...GitOption) (*GitContext, error) {
 		repoPath:    absPath,
 		worktreeDir: ".worktrees",
 		workDir:     absPath,
+		runner:      NewExecRunner(),
 	}
 
 	for _, opt := range opts {
@@ -74,6 +75,14 @@ func WithGitLab(provider PRProvider) GitOption {
 	}
 }
 
+// WithGitRunner sets a custom command runner for git operations.
+// This is primarily used for testing to inject mock command execution.
+func WithGitRunner(runner CommandRunner) GitOption {
+	return func(g *GitContext) {
+		g.runner = runner
+	}
+}
+
 // RepoPath returns the path to the main repository.
 func (g *GitContext) RepoPath() string {
 	return g.repoPath
@@ -98,6 +107,7 @@ func (g *GitContext) InWorktree(worktreePath string) *GitContext {
 		workDir:     worktreePath,
 		github:      g.github,
 		gitlab:      g.gitlab,
+		runner:      g.runner,
 	}
 }
 
@@ -312,22 +322,7 @@ func (g *GitContext) GetPR(ctx context.Context, id int) (*PullRequest, error) {
 
 // runGit executes a git command and returns stdout.
 func (g *GitContext) runGit(args ...string) (string, error) {
-	cmd := exec.Command("git", args...)
-	cmd.Dir = g.workDir
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		errMsg := strings.TrimSpace(stderr.String())
-		if errMsg == "" {
-			errMsg = strings.TrimSpace(stdout.String())
-		}
-		return errMsg, fmt.Errorf("%s", errMsg)
-	}
-
-	return strings.TrimSpace(stdout.String()), nil
+	return g.runner.Run(g.workDir, "git", args...)
 }
 
 // sanitizeBranchName converts a branch name to a safe directory name.

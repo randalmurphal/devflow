@@ -1,20 +1,20 @@
 # devflow
 
-**Go library for AI-powered development workflows.** Git operations, Claude CLI integration, transcript management, and artifact storage.
+**Go library for AI-powered development workflows.** Git operations, LLM integration via flowgraph, transcript management, artifact storage, and notifications.
 
 ## Implementation Status
 
 | Phase | Status | Description |
 |-------|--------|-------------|
 | 1 - Git Primitives | ✅ Complete | GitContext, worktrees, branches, PRs |
-| 2 - Claude CLI | ✅ Complete | ClaudeCLI wrapper, prompts, context |
+| 2 - Claude CLI | ✅ Complete | Uses flowgraph's llm.Client |
 | 3 - Transcripts | ✅ Complete | Recording, search, view, export |
 | 4 - Artifacts | ✅ Complete | Save, load, lifecycle, types |
 | 5 - Workflow Nodes | ✅ Complete | 9 nodes, state, context injection |
-| 6 - Polish | 🔲 Pending | Documentation, examples, CI/CD |
+| 6 - Polish | ✅ Complete | flowgraph integration, notifications, examples |
 
 **Tests**: All passing with race detection (`go test -race ./...`)
-**Coverage**: 52.3%
+**Coverage**: 83.1%
 
 ---
 
@@ -24,11 +24,11 @@ Dev workflow primitives for AI agents. Builds on flowgraph to provide developmen
 
 | Layer | Purpose | Repo |
 |-------|---------|------|
-| flowgraph | Graph orchestration engine | Open source |
+| flowgraph | Graph orchestration engine + LLM abstraction | Open source |
 | **devflow** | Dev workflow primitives (this repo) | Open source |
 | task-keeper | Commercial SaaS product | Commercial |
 
-**Depends on**: flowgraph (for graph orchestration)
+**Depends on**: flowgraph (for graph orchestration and LLM client)
 
 ---
 
@@ -37,9 +37,10 @@ Dev workflow primitives for AI agents. Builds on flowgraph to provide developmen
 | Component | Description | Key Type |
 |-----------|-------------|----------|
 | **GitContext** | Git operations (worktrees, commits, branches) | `GitContext` |
-| **ClaudeCLI** | Claude CLI wrapper with devflow conventions | `ClaudeCLI` |
+| **LLM Client** | Uses flowgraph's `llm.Client` interface | `llm.Client` |
 | **TranscriptManager** | Recording and storing conversation transcripts | `TranscriptManager` |
 | **ArtifactManager** | Storing run artifacts (files, outputs) | `ArtifactManager` |
+| **Notifier** | Workflow event notifications (Slack, webhook) | `Notifier` |
 
 ---
 
@@ -65,23 +66,74 @@ pr, err := git.CreatePR(devflow.PROptions{
 })
 ```
 
-### Claude CLI
+### LLM Client (via flowgraph)
 
 ```go
-claude := devflow.NewClaudeCLI(devflow.ClaudeConfig{
-    Timeout:   5 * time.Minute,
-    MaxTurns:  10,
-})
+import "github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
 
-result, err := claude.Run(ctx, "Implement the feature",
-    devflow.WithSystemPrompt("You are an expert Go developer"),
-    devflow.WithContext("main.go", "utils.go"),
-    devflow.WithWorkDir(worktreePath),
+// Create LLM client
+client := llm.NewClaudeCLI(
+    llm.WithModel("claude-sonnet-4-20250514"),
+    llm.WithWorkdir(repoPath),
 )
 
-// Result contains output, token usage, transcript, created files
-fmt.Println(result.Output)
-fmt.Println(result.TokensIn, result.TokensOut)
+// Run completion
+result, err := client.Complete(ctx, llm.CompletionRequest{
+    SystemPrompt: "You are an expert Go developer",
+    Messages:     []llm.Message{{Role: llm.RoleUser, Content: "Implement the feature"}},
+})
+
+// Access results
+fmt.Println(result.Content)
+fmt.Println(result.Usage.InputTokens, result.Usage.OutputTokens)
+```
+
+### Context Injection
+
+```go
+// Inject services into context for workflow nodes
+ctx := context.Background()
+ctx = devflow.WithGitContext(ctx, git)
+ctx = devflow.WithLLMClient(ctx, client)         // uses flowgraph llm.Client
+ctx = devflow.WithTranscriptManager(ctx, transcripts)
+ctx = devflow.WithArtifactManager(ctx, artifacts)
+ctx = devflow.WithNotifier(ctx, notifier)        // notifications
+ctx = devflow.WithCommandRunner(ctx, runner)     // for testing with MockRunner
+
+// Or use DevServices for convenience
+services := &devflow.DevServices{
+    Git:      git,
+    LLM:      client,  // flowgraph llm.Client
+    Notifier: devflow.NewSlackNotifier(webhookURL),
+    Runner:   devflow.NewMockRunner(),  // optional: for testing
+}
+ctx = services.InjectAll(ctx)
+```
+
+### Notifications
+
+```go
+// Create notifiers
+slackNotifier := devflow.NewSlackNotifier(webhookURL,
+    devflow.WithSlackChannel("#dev-alerts"),
+    devflow.WithSlackUsername("devflow-bot"),
+)
+
+webhookNotifier := devflow.NewWebhookNotifier(url, headers)
+
+// Combine multiple notifiers
+multiNotifier := devflow.NewMultiNotifier(slackNotifier, webhookNotifier)
+
+// Inject into context
+ctx = devflow.WithNotifier(ctx, multiNotifier)
+
+// Notify events
+devflow.NotifyRunStarted(ctx, state)
+devflow.NotifyRunCompleted(ctx, state)
+devflow.NotifyRunFailed(ctx, state, err)
+
+// Or use NotifyNode in workflows
+result, err := devflow.NotifyNode(ctx, state)
 ```
 
 ### Transcripts
@@ -132,9 +184,10 @@ devflow/
 ├── pr.go                   # PRProvider interface, PRBuilder
 ├── github.go               # GitHub PR provider
 ├── gitlab.go               # GitLab MR provider
-├── claude.go               # ClaudeCLI wrapper
 ├── prompt.go               # PromptLoader - template loading
-├── context.go              # ContextBuilder + service injection helpers
+├── context.go              # Service context injection helpers
+├── context_builder.go      # ContextBuilder, FileSelector, MIME detection
+├── notification.go         # Notifier interface + implementations
 ├── transcript.go           # Transcript types
 ├── transcript_store.go     # FileTranscriptStore - storage
 ├── transcript_search.go    # TranscriptSearcher - grep-based search
@@ -143,8 +196,18 @@ devflow/
 ├── artifact_types.go       # ReviewResult, TestOutput, LintOutput
 ├── artifact_lifecycle.go   # LifecycleManager - cleanup/archive
 ├── state.go                # DevState, state components, Ticket
-├── nodes.go                # 9 workflow nodes + wrappers
+├── runner.go               # CommandRunner interface + implementations
 ├── errors.go               # Error types
+│
+├── nodes.go                # NodeFunc type, NodeConfig, wrappers
+├── node_worktree.go        # CreateWorktreeNode, CleanupNode
+├── node_spec.go            # GenerateSpecNode
+├── node_implement.go       # ImplementNode
+├── node_review.go          # ReviewNode, FixFindingsNode, ReviewRouter
+├── node_testing.go         # RunTestsNode
+├── node_lint.go            # CheckLintNode
+├── node_pr.go              # CreatePRNode
+│
 ├── *_test.go               # Unit tests for each file
 └── prompts/                # Default prompt templates
     ├── generate-spec.txt
@@ -156,31 +219,47 @@ devflow/
 
 ## Integration with flowgraph
 
-devflow provides nodes for flowgraph graphs:
+devflow now uses flowgraph's LLM abstraction layer. Nodes use `llm.Client` interface:
 
 ```go
 import (
-    "github.com/yourorg/flowgraph"
-    "github.com/yourorg/devflow"
+    "github.com/rmurphy/flowgraph"
+    "github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
+    "github.com/anthropic/devflow"
 )
 
-type DevState struct {
-    TicketID string
-    Spec     *devflow.Spec
-    Worktree string
-    PR       *devflow.PullRequest
-}
+// Create LLM client from flowgraph
+client := llm.NewClaudeCLI(
+    llm.WithModel("claude-sonnet-4-20250514"),
+    llm.WithWorkdir(repoPath),
+    llm.WithDangerouslySkipPermissions(), // For automation
+)
 
-graph := flowgraph.NewGraph[DevState]().
+// Build workflow graph
+graph := flowgraph.NewGraph[devflow.DevState]().
     AddNode("create-worktree", devflow.CreateWorktreeNode).
     AddNode("generate-spec", devflow.GenerateSpecNode).
     AddNode("implement", devflow.ImplementNode).
+    AddNode("review", devflow.ReviewNode).
     AddNode("create-pr", devflow.CreatePRNode).
+    AddNode("notify", devflow.NotifyNode).
     AddEdge("create-worktree", "generate-spec").
     AddEdge("generate-spec", "implement").
-    AddEdge("implement", "create-pr").
-    AddEdge("create-pr", flowgraph.END).
+    AddEdge("implement", "review").
+    AddEdge("review", "create-pr").
+    AddEdge("create-pr", "notify").
+    AddEdge("notify", flowgraph.END).
     SetEntry("create-worktree")
+
+// Inject services
+ctx := context.Background()
+ctx = devflow.WithGitContext(ctx, git)
+ctx = devflow.WithLLMClient(ctx, client)
+ctx = devflow.WithNotifier(ctx, slackNotifier)
+
+// Execute
+state := devflow.NewDevState("ticket-to-pr")
+result, err := graph.Execute(ctx, state)
 ```
 
 ---
@@ -213,8 +292,9 @@ graph := flowgraph.NewGraph[DevState]().
 |-------|------|----------|
 | `ErrWorktreeExists` | Worktree already exists | Clean up or use existing |
 | `ErrGitDirty` | Uncommitted changes | Stash or abort |
-| `ErrClaudeTimeout` | Claude CLI timed out | Retry with longer timeout |
+| `ErrTimeout` | Operation timed out | Retry with longer timeout |
 | `ErrTranscriptNotFound` | Run ID doesn't exist | Check run ID |
+| `ErrContextTooLarge` | Context exceeds limits | Reduce file count or size |
 
 ---
 
@@ -225,18 +305,13 @@ go test -race ./...                    # Unit tests
 go test -race -tags=integration ./...  # With real git/Claude
 ```
 
-**Coverage targets**: 85% overall
-
 ---
 
 ## Dependencies
 
 ```bash
-# Core
-go get github.com/yourorg/flowgraph  # Graph orchestration
-
-# Git operations
-go get github.com/go-git/go-git/v5   # Pure Go git
+# Core (now uses flowgraph's llm package)
+go get github.com/rmurphy/flowgraph
 
 # GitHub/GitLab
 go get github.com/google/go-github/v57
@@ -259,9 +334,8 @@ go get github.com/xanzy/go-gitlab
 
 ## Related Repos
 
-- **flowgraph**: Foundation layer (graph orchestration)
+- **flowgraph**: Foundation layer (graph orchestration + LLM abstraction)
 - **task-keeper**: Product layer (commercial SaaS)
-- **ai-devtools/ensemble**: Python reference implementation
 
 ---
 
@@ -312,32 +386,28 @@ Complete specifications are in `.spec/`. **Read these before implementing.**
 | Phase | Focus | Status |
 |-------|-------|--------|
 | 1 | Git Primitives | ✅ Complete |
-| 2 | Claude CLI | ✅ Complete |
+| 2 | Claude CLI | ✅ Complete (migrated to flowgraph) |
 | 3 | Transcripts | ✅ Complete |
 | 4 | Artifacts | ✅ Complete |
 | 5 | Workflow Nodes | ✅ Complete |
-| 6 | Polish | 🔲 Next |
+| 6 | Polish | ✅ Complete |
 
 ### Key Design Decisions
 
 - **Shell out to git** (ADR-001): Don't use go-git for worktrees, shell out to git binary
-- **Shell out to claude** (ADR-006): Wrap the claude CLI, don't use API directly
+- **Use flowgraph llm.Client** (ADR-006): Use flowgraph's LLM abstraction, not a devflow-specific wrapper
 - **JSON files for storage** (ADR-012): Simple file-based storage, no database
 - **grep for search** (ADR-014): Use grep for transcript search, not a search engine
 - **Context injection** (ADR-018): Pass services via context.Context, not state
 
-### Phase 6 Tasks (Current Work)
+### Phase 6 Status
 
-See `.spec/phases/phase-6-polish.md` for full details:
-
-1. **Documentation**: Update godoc comments, ensure examples compile
-2. **Examples**: Create example applications in `examples/`
-3. **CI/CD**: Add GitHub Actions workflow
-4. **Release Prep**: CHANGELOG.md, LICENSE, version tagging
-
-### Before Continuing
-
-1. Read `.spec/phases/phase-6-polish.md` for Phase 6 requirements
-2. Check `.spec/tracking/PROGRESS.md` for current status
-3. Run `go test -race ./...` to verify all tests pass
-4. Update `tracking/PROGRESS.md` as you complete items
+All Phase 6 tasks completed:
+- ✅ flowgraph dependency added
+- ✅ LLM context injection (`WithLLMClient`, `LLMFromContext`)
+- ✅ All nodes updated to use `llm.Client`
+- ✅ Notification system implemented (Slack, Webhook, Log, Multi)
+- ✅ Tests updated and passing (83.1% coverage)
+- ✅ Example applications (`examples/basic/main.go`)
+- ✅ Documentation polish
+- ✅ Code cleanup (removed deprecated ClaudeCLI, split large files)

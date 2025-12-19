@@ -52,8 +52,8 @@ const (
 
 // ReviewVerdict constants
 const (
-	VerdictApprove        = "APPROVE"
-	VerdictRequestChanges = "REQUEST_CHANGES"
+	VerdictApprove         = "APPROVE"
+	VerdictRequestChanges  = "REQUEST_CHANGES"
 	VerdictNeedsDiscussion = "NEEDS_DISCUSSION"
 )
 
@@ -109,22 +109,22 @@ type TestOutput struct {
 
 // TestFailure represents a single test failure
 type TestFailure struct {
-	Name      string `json:"name"`
-	Package   string `json:"package,omitempty"`
-	Message   string `json:"message"`
-	File      string `json:"file,omitempty"`
-	Line      int    `json:"line,omitempty"`
-	Output    string `json:"output,omitempty"`
-	Expected  string `json:"expected,omitempty"`
-	Actual    string `json:"actual,omitempty"`
+	Name     string `json:"name"`
+	Package  string `json:"package,omitempty"`
+	Message  string `json:"message"`
+	File     string `json:"file,omitempty"`
+	Line     int    `json:"line,omitempty"`
+	Output   string `json:"output,omitempty"`
+	Expected string `json:"expected,omitempty"`
+	Actual   string `json:"actual,omitempty"`
 }
 
 // TestCoverage represents code coverage data
 type TestCoverage struct {
-	Percentage float64              `json:"percentage"`
-	Lines      int                  `json:"lines"`
-	Covered    int                  `json:"covered"`
-	ByPackage  map[string]float64   `json:"byPackage,omitempty"`
+	Percentage float64            `json:"percentage"`
+	Lines      int                `json:"lines"`
+	Covered    int                `json:"covered"`
+	ByPackage  map[string]float64 `json:"byPackage,omitempty"`
 }
 
 // SuccessRate returns the percentage of tests that passed
@@ -137,30 +137,30 @@ func (t *TestOutput) SuccessRate() float64 {
 
 // LintOutput represents linting results
 type LintOutput struct {
-	Passed   bool          `json:"passed"`
-	Tool     string        `json:"tool"` // ruff, eslint, golint, etc.
-	Issues   []LintIssue   `json:"issues,omitempty"`
-	Summary  LintSummary   `json:"summary"`
+	Passed  bool        `json:"passed"`
+	Tool    string      `json:"tool"` // ruff, eslint, golint, etc.
+	Issues  []LintIssue `json:"issues,omitempty"`
+	Summary LintSummary `json:"summary"`
 }
 
 // LintIssue represents a single lint issue
 type LintIssue struct {
-	File       string `json:"file"`
-	Line       int    `json:"line"`
-	Column     int    `json:"column,omitempty"`
-	Rule       string `json:"rule"`
-	Severity   string `json:"severity"` // error, warning
-	Message    string `json:"message"`
-	Fixable    bool   `json:"fixable,omitempty"`
+	File     string `json:"file"`
+	Line     int    `json:"line"`
+	Column   int    `json:"column,omitempty"`
+	Rule     string `json:"rule"`
+	Severity string `json:"severity"` // error, warning
+	Message  string `json:"message"`
+	Fixable  bool   `json:"fixable,omitempty"`
 }
 
 // LintSummary contains summary statistics
 type LintSummary struct {
-	TotalIssues   int `json:"totalIssues"`
-	Errors        int `json:"errors"`
-	Warnings      int `json:"warnings"`
-	FixableCount  int `json:"fixableCount"`
-	FilesChecked  int `json:"filesChecked"`
+	TotalIssues  int `json:"totalIssues"`
+	Errors       int `json:"errors"`
+	Warnings     int `json:"warnings"`
+	FixableCount int `json:"fixableCount"`
+	FilesChecked int `json:"filesChecked"`
 }
 
 // Specification represents a generated specification

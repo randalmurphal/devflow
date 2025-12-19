@@ -33,6 +33,18 @@ var (
 	ErrMergeConflict = errors.New("merge conflict")
 )
 
+// Context building errors
+var (
+	// ErrContextTooLarge indicates the context exceeds size limits.
+	ErrContextTooLarge = errors.New("context too large")
+)
+
+// Operation errors
+var (
+	// ErrTimeout indicates an operation timed out.
+	ErrTimeout = errors.New("operation timed out")
+)
+
 // PR provider errors
 var (
 	// ErrNoPRProvider indicates no PR provider is configured.

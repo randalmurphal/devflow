@@ -6,9 +6,12 @@ toolchain go1.24.11
 
 require (
 	github.com/google/go-github/v57 v57.0.0
+	github.com/rmurphy/flowgraph v0.0.0-00010101000000-000000000000
 	github.com/xanzy/go-gitlab v0.115.0
 	golang.org/x/oauth2 v0.34.0
 )
+
+replace github.com/rmurphy/flowgraph => ../flowgraph
 
 require (
 	github.com/google/go-querystring v1.1.0 // indirect

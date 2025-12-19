@@ -44,6 +44,13 @@ type SpecState struct {
 	SpecGeneratedAt time.Time `json:"specGeneratedAt,omitempty"`
 }
 
+// FileChange represents a file modification during implementation
+type FileChange struct {
+	Path      string `json:"path"`
+	Operation string `json:"operation"` // "create", "modify", "delete"
+	Content   string `json:"content,omitempty"`
+}
+
 // ImplementState tracks implementation progress
 type ImplementState struct {
 	Implementation     string       `json:"implementation,omitempty"`
@@ -69,9 +76,9 @@ type PullRequestState struct {
 
 // TestState tracks test execution
 type TestState struct {
-	TestOutput    *TestOutput `json:"testOutput,omitempty"`
-	TestPassed    bool        `json:"testPassed,omitempty"`
-	TestRunAt     time.Time   `json:"testRunAt,omitempty"`
+	TestOutput *TestOutput `json:"testOutput,omitempty"`
+	TestPassed bool        `json:"testPassed,omitempty"`
+	TestRunAt  time.Time   `json:"testRunAt,omitempty"`
 }
 
 // LintState tracks lint/type check execution

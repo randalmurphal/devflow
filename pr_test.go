@@ -190,9 +190,9 @@ func TestPRBuilder_ChainedCalls(t *testing.T) {
 
 func TestDetectProvider(t *testing.T) {
 	tests := []struct {
-		url      string
-		want     string
-		wantErr  bool
+		url     string
+		want    string
+		wantErr bool
 	}{
 		{"https://github.com/owner/repo.git", "github", false},
 		{"git@github.com:owner/repo.git", "github", false},

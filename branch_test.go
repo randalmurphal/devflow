@@ -171,10 +171,10 @@ func TestSlugify(t *testing.T) {
 
 func TestParseBranch(t *testing.T) {
 	tests := []struct {
-		branch     string
-		wantType   string
-		wantID     string
-		wantExtra  string
+		branch    string
+		wantType  string
+		wantID    string
+		wantExtra string
 	}{
 		{"feature/tk-421-add-auth", "feature", "tk", "421-add-auth"},
 		{"bugfix/tk-422", "bugfix", "tk", "422"},

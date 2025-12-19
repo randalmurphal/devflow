@@ -3,6 +3,7 @@ package devflow
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -85,8 +86,8 @@ func (p *GitHubProvider) CreatePR(ctx context.Context, opts PROptions) (*PullReq
 	if len(opts.Labels) > 0 {
 		_, _, err = p.client.Issues.AddLabelsToIssue(ctx, p.owner, p.repo, pr.GetNumber(), opts.Labels)
 		if err != nil {
-			// Log but don't fail - PR was created
-			_ = err
+			// Log but don't fail - PR was created successfully
+			slog.Warn("failed to add labels to PR", "error", err, "pr", pr.GetNumber(), "labels", opts.Labels)
 		}
 	}
 
@@ -95,8 +96,8 @@ func (p *GitHubProvider) CreatePR(ctx context.Context, opts PROptions) (*PullReq
 		_, _, err = p.client.PullRequests.RequestReviewers(ctx, p.owner, p.repo, pr.GetNumber(),
 			github.ReviewersRequest{Reviewers: opts.Reviewers})
 		if err != nil {
-			// Log but don't fail
-			_ = err
+			// Log but don't fail - PR was created successfully
+			slog.Warn("failed to request reviewers", "error", err, "pr", pr.GetNumber(), "reviewers", opts.Reviewers)
 		}
 	}
 
@@ -104,8 +105,8 @@ func (p *GitHubProvider) CreatePR(ctx context.Context, opts PROptions) (*PullReq
 	if len(opts.Assignees) > 0 {
 		_, _, err = p.client.Issues.AddAssignees(ctx, p.owner, p.repo, pr.GetNumber(), opts.Assignees)
 		if err != nil {
-			// Log but don't fail
-			_ = err
+			// Log but don't fail - PR was created successfully
+			slog.Warn("failed to add assignees", "error", err, "pr", pr.GetNumber(), "assignees", opts.Assignees)
 		}
 	}
 
@@ -147,26 +148,32 @@ func (p *GitHubProvider) UpdatePR(ctx context.Context, id int, opts PRUpdateOpti
 	if opts.Labels != nil {
 		_, _, err = p.client.Issues.ReplaceLabelsForIssue(ctx, p.owner, p.repo, id, opts.Labels)
 		if err != nil {
-			_ = err
+			slog.Warn("failed to update labels", "error", err, "pr", id, "labels", opts.Labels)
 		}
 	}
 
 	// Update assignees if specified
 	if opts.Assignees != nil {
-		issue, _, _ := p.client.Issues.Get(ctx, p.owner, p.repo, id)
-		if issue != nil {
+		issue, _, err := p.client.Issues.Get(ctx, p.owner, p.repo, id)
+		if err != nil {
+			slog.Warn("failed to get issue for assignee update", "error", err, "pr", id)
+		} else if issue != nil {
 			// Remove existing assignees
 			var existing []string
 			for _, a := range issue.Assignees {
 				existing = append(existing, a.GetLogin())
 			}
 			if len(existing) > 0 {
-				_, _, _ = p.client.Issues.RemoveAssignees(ctx, p.owner, p.repo, id, existing)
+				if _, _, err := p.client.Issues.RemoveAssignees(ctx, p.owner, p.repo, id, existing); err != nil {
+					slog.Warn("failed to remove existing assignees", "error", err, "pr", id, "assignees", existing)
+				}
 			}
 		}
 		// Add new assignees
 		if len(opts.Assignees) > 0 {
-			_, _, _ = p.client.Issues.AddAssignees(ctx, p.owner, p.repo, id, opts.Assignees)
+			if _, _, err := p.client.Issues.AddAssignees(ctx, p.owner, p.repo, id, opts.Assignees); err != nil {
+				slog.Warn("failed to add new assignees", "error", err, "pr", id, "assignees", opts.Assignees)
+			}
 		}
 	}
 
@@ -207,8 +214,12 @@ func (p *GitHubProvider) MergePR(ctx context.Context, id int, opts MergeOptions)
 	// Delete branch if requested
 	if opts.DeleteBranch {
 		pr, _, err := p.client.PullRequests.Get(ctx, p.owner, p.repo, id)
-		if err == nil && pr.Head != nil && pr.Head.Ref != nil {
-			_, _ = p.client.Git.DeleteRef(ctx, p.owner, p.repo, "heads/"+*pr.Head.Ref)
+		if err != nil {
+			slog.Warn("failed to get PR for branch deletion", "error", err, "pr", id)
+		} else if pr.Head != nil && pr.Head.Ref != nil {
+			if _, err := p.client.Git.DeleteRef(ctx, p.owner, p.repo, "heads/"+*pr.Head.Ref); err != nil {
+				slog.Warn("failed to delete branch after merge", "error", err, "pr", id, "branch", *pr.Head.Ref)
+			}
 		}
 	}
 

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -62,7 +63,7 @@ func (s *TranscriptSearcher) searchWithRipgrep(runsDir, query string, opts Searc
 	}
 
 	if opts.MaxResults > 0 {
-		args = append(args, "-m", itoa(opts.MaxResults))
+		args = append(args, "-m", strconv.Itoa(opts.MaxResults))
 	}
 
 	args = append(args, query, runsDir)
@@ -346,30 +347,3 @@ func extractRunID(path string) string {
 	return ""
 }
 
-// itoa is a simple int to string conversion
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-
-	neg := false
-	if n < 0 {
-		neg = true
-		n = -n
-	}
-
-	var buf [20]byte
-	i := len(buf)
-	for n > 0 {
-		i--
-		buf[i] = byte('0' + n%10)
-		n /= 10
-	}
-
-	if neg {
-		i--
-		buf[i] = '-'
-	}
-
-	return string(buf[i:])
-}

@@ -500,6 +500,219 @@ func TestDiskUsage(t *testing.T) {
 	}
 }
 
+func TestArtifactManager_SaveLoadSpec(t *testing.T) {
+	dir := t.TempDir()
+	m := NewArtifactManager(ArtifactConfig{BaseDir: dir})
+
+	runID := "test-run-spec"
+	spec := "# Feature Specification\n\n## Overview\n\nImplement authentication."
+
+	// Save
+	err := m.SaveSpec(runID, spec)
+	if err != nil {
+		t.Fatalf("SaveSpec: %v", err)
+	}
+
+	// Load
+	loaded, err := m.LoadSpec(runID)
+	if err != nil {
+		t.Fatalf("LoadSpec: %v", err)
+	}
+
+	if loaded != spec {
+		t.Errorf("LoadSpec() = %q, want %q", loaded, spec)
+	}
+}
+
+func TestArtifactManager_SaveLoadLintOutput(t *testing.T) {
+	dir := t.TempDir()
+	m := NewArtifactManager(ArtifactConfig{BaseDir: dir})
+
+	runID := "test-run-lint"
+	output := &LintOutput{
+		Passed: false,
+		Tool:   "ruff",
+		Issues: []LintIssue{
+			{File: "main.go", Line: 10, Column: 5, Rule: "errcheck", Severity: SeverityError, Message: "error not checked"},
+			{File: "util.go", Line: 20, Column: 1, Rule: "unused", Severity: SeverityWarning, Message: "unused variable"},
+		},
+		Summary: LintSummary{
+			TotalIssues:  5,
+			Errors:       2,
+			Warnings:     3,
+			FilesChecked: 10,
+		},
+	}
+
+	// Save
+	err := m.SaveLintOutput(runID, output)
+	if err != nil {
+		t.Fatalf("SaveLintOutput: %v", err)
+	}
+
+	// Load
+	loaded, err := m.LoadLintOutput(runID)
+	if err != nil {
+		t.Fatalf("LoadLintOutput: %v", err)
+	}
+
+	if loaded.Summary.TotalIssues != output.Summary.TotalIssues {
+		t.Errorf("TotalIssues = %d, want %d", loaded.Summary.TotalIssues, output.Summary.TotalIssues)
+	}
+	if len(loaded.Issues) != 2 {
+		t.Errorf("Issues count = %d, want 2", len(loaded.Issues))
+	}
+}
+
+func TestArtifactManager_SaveLoadDiff(t *testing.T) {
+	dir := t.TempDir()
+	m := NewArtifactManager(ArtifactConfig{BaseDir: dir})
+
+	runID := "test-run-diff"
+	diff := `diff --git a/main.go b/main.go
+index abc1234..def5678 100644
+--- a/main.go
++++ b/main.go
+@@ -1,3 +1,5 @@
+ package main
+
++import "fmt"
++
+ func main() {
+`
+
+	// Save
+	err := m.SaveDiff(runID, diff)
+	if err != nil {
+		t.Fatalf("SaveDiff: %v", err)
+	}
+
+	// Load
+	loaded, err := m.LoadDiff(runID)
+	if err != nil {
+		t.Fatalf("LoadDiff: %v", err)
+	}
+
+	if loaded != diff {
+		t.Errorf("LoadDiff() mismatch")
+	}
+}
+
+func TestArtifactManager_SaveLoadJSON(t *testing.T) {
+	dir := t.TempDir()
+	m := NewArtifactManager(ArtifactConfig{BaseDir: dir})
+
+	runID := "test-run-json"
+	data := map[string]interface{}{
+		"name":    "test",
+		"count":   42,
+		"enabled": true,
+		"items":   []string{"a", "b", "c"},
+	}
+
+	// Save
+	err := m.SaveJSON(runID, "custom-data.json", data)
+	if err != nil {
+		t.Fatalf("SaveJSON: %v", err)
+	}
+
+	// Load
+	var loaded map[string]interface{}
+	err = m.LoadJSON(runID, "custom-data.json", &loaded)
+	if err != nil {
+		t.Fatalf("LoadJSON: %v", err)
+	}
+
+	if loaded["name"] != "test" {
+		t.Errorf("loaded[name] = %v, want %q", loaded["name"], "test")
+	}
+	// JSON unmarshals numbers as float64
+	if loaded["count"].(float64) != 42 {
+		t.Errorf("loaded[count] = %v, want 42", loaded["count"])
+	}
+}
+
+func TestArtifactManager_EnsureRunDir(t *testing.T) {
+	dir := t.TempDir()
+	m := NewArtifactManager(ArtifactConfig{BaseDir: dir})
+
+	runID := "test-ensure-dir"
+	err := m.EnsureRunDir(runID)
+	if err != nil {
+		t.Fatalf("EnsureRunDir: %v", err)
+	}
+
+	// Check directory was created
+	runDir := m.RunDir(runID)
+	info, err := os.Stat(runDir)
+	if err != nil {
+		t.Fatalf("runDir stat: %v", err)
+	}
+	if !info.IsDir() {
+		t.Error("runDir should be a directory")
+	}
+
+	// Check artifacts dir was created
+	artifactDir := m.ArtifactDir(runID)
+	info, err = os.Stat(artifactDir)
+	if err != nil {
+		t.Fatalf("artifactDir stat: %v", err)
+	}
+	if !info.IsDir() {
+		t.Error("artifactDir should be a directory")
+	}
+
+	// Second call should succeed (idempotent)
+	err = m.EnsureRunDir(runID)
+	if err != nil {
+		t.Fatalf("EnsureRunDir second call: %v", err)
+	}
+}
+
+func TestArtifactManager_GetArtifactInfo(t *testing.T) {
+	dir := t.TempDir()
+	m := NewArtifactManager(ArtifactConfig{BaseDir: dir})
+
+	runID := "test-info"
+	content := []byte("test content for info")
+
+	err := m.SaveArtifact(runID, "test.txt", content)
+	if err != nil {
+		t.Fatalf("SaveArtifact: %v", err)
+	}
+
+	info, err := m.GetArtifactInfo(runID, "test.txt")
+	if err != nil {
+		t.Fatalf("GetArtifactInfo: %v", err)
+	}
+
+	if info.Name != "test.txt" {
+		t.Errorf("Name = %q, want %q", info.Name, "test.txt")
+	}
+	if info.Size != int64(len(content)) {
+		t.Errorf("Size = %d, want %d", info.Size, len(content))
+	}
+}
+
+func TestArtifactManager_GetArtifactInfo_NotFound(t *testing.T) {
+	dir := t.TempDir()
+	m := NewArtifactManager(ArtifactConfig{BaseDir: dir})
+
+	_, err := m.GetArtifactInfo("nonexistent", "file.txt")
+	if err == nil {
+		t.Error("GetArtifactInfo should fail for nonexistent artifact")
+	}
+}
+
+func TestArtifactManager_BaseDir(t *testing.T) {
+	dir := t.TempDir()
+	m := NewArtifactManager(ArtifactConfig{BaseDir: dir})
+
+	if m.BaseDir() != dir {
+		t.Errorf("BaseDir() = %q, want %q", m.BaseDir(), dir)
+	}
+}
+
 // Helper to create test runs
 func createTestRun(t *testing.T, baseDir, runID string, endedAt time.Time, status RunStatus) {
 	t.Helper()

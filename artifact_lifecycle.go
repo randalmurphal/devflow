@@ -79,9 +79,9 @@ func (m *LifecycleManager) Cleanup(dryRun bool) (*CleanupResult, error) {
 	deleteThreshold := now.Add(-time.Duration(m.config.RetentionDays) * 24 * time.Hour)
 
 	type runInfo struct {
-		id     string
-		meta   *TranscriptMeta
-		size   int64
+		id      string
+		meta    *TranscriptMeta
+		size    int64
 		endedAt time.Time
 	}
 

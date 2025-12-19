@@ -350,3 +350,54 @@ func TestDefaultValue(t *testing.T) {
 		})
 	}
 }
+
+func TestQuoteString(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"hello", `"hello"`},
+		{`hello "world"`, `"hello \"world\""`},
+		{"line\nbreak", `"line\nbreak"`},
+		{"", `""`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := quoteString(tt.input)
+			if got != tt.want {
+				t.Errorf("quoteString(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPromptLoader_AddFunc(t *testing.T) {
+	loader := NewPromptLoader("/nonexistent")
+
+	// Add a custom function
+	loader.AddFunc("uppercase", func(s string) string {
+		return strings.ToUpper(s)
+	})
+
+	// Create a temp dir with a template that uses our custom function
+	dir := t.TempDir()
+	promptsDir := filepath.Join(dir, "prompts")
+	os.MkdirAll(promptsDir, 0755)
+	os.WriteFile(filepath.Join(promptsDir, "custom-func.txt"),
+		[]byte("{{uppercase .Name}}"), 0644)
+
+	// Need to add the search dir
+	loader.AddSearchDir(promptsDir)
+
+	content, err := loader.LoadWithVars("custom-func", map[string]any{
+		"Name": "hello",
+	})
+	if err != nil {
+		t.Fatalf("LoadWithVars: %v", err)
+	}
+
+	if content != "HELLO" {
+		t.Errorf("content = %q, want 'HELLO'", content)
+	}
+}
