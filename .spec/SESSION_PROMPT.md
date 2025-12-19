@@ -1,8 +1,8 @@
 # devflow Implementation Session
 
-## Status: BLOCKED on flowgraph Phase 6
+## Status: READY to proceed - flowgraph Phase 6 COMPLETE
 
-**Phases 1-5 complete. Phase 6 BLOCKED pending flowgraph LLM enhancements.**
+**Phases 1-5 complete. Phase 6 can now proceed - flowgraph LLM enhancements are done.**
 
 ---
 
@@ -19,46 +19,57 @@ devflow depends on flowgraph for ALL LLM-related functionality. The current devf
 | Phase | Status | Notes |
 |-------|--------|-------|
 | 1 - Git Primitives | ✅ Complete | GitContext, worktrees, branches, PRs |
-| 2 - Claude CLI | ✅ Complete | **HAS DUPLICATE CODE - must migrate to flowgraph** |
+| 2 - Claude CLI | ✅ Complete | **Ready to migrate to flowgraph** |
 | 3 - Transcripts | ✅ Complete | Recording, search, view, export |
 | 4 - Artifacts | ✅ Complete | Save, load, lifecycle, types |
 | 5 - Workflow Nodes | ✅ Complete | 9 nodes, state, context injection |
-| 6 - Polish | 🔲 BLOCKED | Waiting on flowgraph Phase 6 |
+| 6 - Polish | 🟡 Ready | flowgraph Phase 6 LLM done, can proceed |
 
 **Tests**: All passing with race detection (`go test -race ./...`)
 **Coverage**: 52.3% (target: 80%)
 
 ---
 
-## BLOCKING ISSUE: flowgraph Integration
+## flowgraph Integration - READY
 
-### What's Blocking
+### Status: ✅ UNBLOCKED
 
-flowgraph Phase 6 must complete before devflow can:
+flowgraph Phase 6 LLM enhancements are **COMPLETE**. devflow can now:
 1. Remove duplicate ClaudeCLI code
-2. Migrate ContextBuilder to flowgraph
-3. Migrate PromptLoader to flowgraph
-4. Update nodes to use flowgraph's llm.Client
+2. Import and use flowgraph's `llm.Client`
+3. Update nodes to use flowgraph's LLM client
+4. Decide on ContextBuilder/PromptLoader migration
 
-### Check flowgraph Status
+### flowgraph LLM Features Available
 
-```bash
-# Check if flowgraph Phase 6 is complete
-cat ../flowgraph/.spec/tracking/PROGRESS.md | grep -A5 "Phase 6"
-```
+| Feature | Status | Import Path |
+|---------|--------|-------------|
+| `llm.Client` interface | ✅ Ready | `github.com/rmurphy/flowgraph/pkg/flowgraph/llm` |
+| `ClaudeCLI` implementation | ✅ Ready | Full JSON parsing, token/cost tracking |
+| `MockClient` for testing | ✅ Ready | Sequential responses, custom handlers |
+| `WithSessionID(id)` | ✅ Ready | Session tracking |
+| `WithContinue()` | ✅ Ready | Continue last session |
+| `WithResume(id)` | ✅ Ready | Resume specific session |
+| `WithMaxTurns(n)` | ✅ Ready | Limit agentic turns |
+| `WithSystemPrompt(s)` | ✅ Ready | Set system prompt |
+| `WithAppendSystemPrompt(s)` | ✅ Ready | Append to system prompt |
+| `WithDisallowedTools(tools)` | ✅ Ready | Blacklist tools |
+| `WithDangerouslySkipPermissions()` | ✅ Ready | Non-interactive mode |
+| `WithMaxBudgetUSD(amount)` | ✅ Ready | Cap spending |
+| `SessionID` in response | ✅ Ready | Multi-turn tracking |
+| `CostUSD` in response | ✅ Ready | Budget tracking |
+| Token tracking (including cache) | ✅ Ready | Full usage breakdown |
 
-### If flowgraph Phase 6 is NOT complete:
+### NOT in flowgraph (devflow must decide)
 
-**STOP. Do not implement LLM features in devflow.**
+| Feature | Notes |
+|---------|-------|
+| `ContextBuilder` | Still in devflow - decide: migrate or keep? |
+| `PromptLoader` | Still in devflow - decide: migrate or keep? |
 
-Options:
-1. Work on flowgraph Phase 6 first
-2. Work on devflow features that don't require LLM (notifications, test coverage)
-3. Ask user what to prioritize
+These are dev-workflow specific and may stay in devflow rather than move to flowgraph.
 
-### If flowgraph Phase 6 IS complete:
-
-Proceed with devflow Phase 6 integration work. See "Phase 6 Tasks" below.
+**Proceed with devflow Phase 6 integration work. See "Phase 6 Tasks" below.**
 
 ---
 

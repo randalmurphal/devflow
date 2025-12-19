@@ -65,24 +65,24 @@ The following features MUST exist in flowgraph before devflow can complete its i
 
 | Feature | Required | flowgraph Status | Notes |
 |---------|----------|-----------------|-------|
-| JSON output parsing | ✅ Yes | 🔲 Phase 6 | `--output-format json` |
-| Token/cost extraction | ✅ Yes | 🔲 Phase 6 | From JSON response |
-| `SessionID` in response | ✅ Yes | 🔲 Phase 6 | For multi-turn tracking |
-| `CostUSD` in response | ✅ Yes | 🔲 Phase 6 | For budget tracking |
-| `WithSessionID(id)` | ✅ Yes | 🔲 Phase 6 | Use specific session |
-| `WithContinue()` | ✅ Yes | 🔲 Phase 6 | Continue last session |
-| `WithResume(id)` | ✅ Yes | 🔲 Phase 6 | Resume specific session |
-| `WithMaxTurns(n)` | ✅ Yes | 🔲 Phase 6 | Limit conversation turns |
-| `WithSystemPrompt(s)` | ✅ Yes | 🔲 Phase 6 | Set system prompt |
-| `WithAppendSystemPrompt(s)` | ✅ Yes | 🔲 Phase 6 | Append to system prompt |
-| `WithAllowedTools(tools)` | ✅ Yes | ✅ Complete | Whitelist tools |
-| `WithDisallowedTools(tools)` | ✅ Yes | 🔲 Phase 6 | Blacklist tools |
-| `WithDangerouslySkipPermissions()` | ✅ Yes | 🔲 Phase 6 | Non-interactive mode |
-| `WithMaxBudgetUSD(amount)` | ✅ Yes | 🔲 Phase 6 | Cap spending |
-| `WithWorkdir(dir)` | ✅ Yes | ✅ Complete | Working directory |
-| `WithTimeout(d)` | ✅ Yes | ✅ Complete | Command timeout |
-| `WithAddDirs(dirs)` | ⚪ Optional | 🔲 Phase 6 | Additional directories |
-| `WithFallbackModel(model)` | ⚪ Optional | 🔲 Phase 6 | Fallback on overload |
+| JSON output parsing | ✅ Yes | ✅ **Complete** | `--output-format json` default |
+| Token/cost extraction | ✅ Yes | ✅ **Complete** | Full JSON response parsing |
+| `SessionID` in response | ✅ Yes | ✅ **Complete** | For multi-turn tracking |
+| `CostUSD` in response | ✅ Yes | ✅ **Complete** | For budget tracking |
+| `WithSessionID(id)` | ✅ Yes | ✅ **Complete** | Use specific session |
+| `WithContinue()` | ✅ Yes | ✅ **Complete** | Continue last session |
+| `WithResume(id)` | ✅ Yes | ✅ **Complete** | Resume specific session |
+| `WithMaxTurns(n)` | ✅ Yes | ✅ **Complete** | Limit agentic turns |
+| `WithSystemPrompt(s)` | ✅ Yes | ✅ **Complete** | Set system prompt |
+| `WithAppendSystemPrompt(s)` | ✅ Yes | ✅ **Complete** | Append to system prompt |
+| `WithAllowedTools(tools)` | ✅ Yes | ✅ **Complete** | Whitelist tools |
+| `WithDisallowedTools(tools)` | ✅ Yes | ✅ **Complete** | Blacklist tools |
+| `WithDangerouslySkipPermissions()` | ✅ Yes | ✅ **Complete** | Non-interactive mode |
+| `WithMaxBudgetUSD(amount)` | ✅ Yes | ✅ **Complete** | Cap spending |
+| `WithWorkdir(dir)` | ✅ Yes | ✅ **Complete** | Working directory |
+| `WithTimeout(d)` | ✅ Yes | ✅ **Complete** | Command timeout |
+| `WithAddDirs(dirs)` | ⚪ Optional | ✅ **Complete** | Additional directories |
+| `WithFallbackModel(model)` | ⚪ Optional | ✅ **Complete** | Fallback on overload |
 
 ### Context Building (`pkg/flowgraph/llm/context.go` - NEW)
 
