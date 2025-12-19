@@ -1,8 +1,8 @@
 # devflow Implementation Session
 
-## Status: Ready for Implementation
+## Status: Phase 6 - Polish & Integration
 
-Specification phase complete. All design decisions documented. Ready to write code.
+Phases 1-5 complete. All core functionality implemented and tested. Ready for final polish.
 
 ---
 
@@ -21,201 +21,199 @@ Specification phase complete. All design decisions documented. Ready to write co
 
 ## What's Been Done
 
-✅ **47 specification documents created:**
-- 20 ADRs covering all architectural decisions
-- 6 phase specifications with detailed task breakdowns
-- 8 feature specifications with API designs
-- 7 node specifications with prompts and test cases
-- Integration patterns documentation
+### ✅ Phase 1: Git Primitives (Complete)
+| File | Purpose |
+|------|---------|
+| `git.go` | GitContext - worktrees, branches, commits, push/pull |
+| `branch.go` | BranchNamer - naming conventions |
+| `commit.go` | CommitMessage - conventional commits |
+| `pr.go` | PRProvider interface, PRBuilder |
+| `github.go` | GitHub PR provider |
+| `gitlab.go` | GitLab MR provider |
+| `errors.go` | Error types |
 
-All specs are in `.spec/`. Read `PLANNING.md` first for philosophy.
+### ✅ Phase 2: Claude CLI Wrapper (Complete)
+| File | Purpose |
+|------|---------|
+| `claude.go` | ClaudeCLI - Run with options, output parsing |
+| `prompt.go` | PromptLoader - Go templates with caching |
+| `context.go` | ContextBuilder - file context with limits |
+| `prompts/` | Default prompt templates |
 
----
+### ✅ Phase 3: Transcript Management (Complete)
+| File | Purpose |
+|------|---------|
+| `transcript.go` | Transcript, Turn, ToolCall types |
+| `transcript_store.go` | FileTranscriptStore - TranscriptManager impl |
+| `transcript_search.go` | TranscriptSearcher - grep/ripgrep search |
+| `transcript_view.go` | TranscriptViewer - display/export |
 
-## Implementation Phases
+### ✅ Phase 4: Artifact Management (Complete)
+| File | Purpose |
+|------|---------|
+| `artifact.go` | ArtifactManager - save/load with compression |
+| `artifact_types.go` | ReviewResult, TestOutput, LintOutput |
+| `artifact_lifecycle.go` | LifecycleManager - cleanup/archive |
 
-### Phase 1: Git Primitives (Week 1)
-**Start here.** Foundation for everything else.
+### ✅ Phase 5: Workflow Nodes (Complete)
+| File | Purpose |
+|------|---------|
+| `context.go` | Service injection helpers (With/From pattern) |
+| `state.go` | DevState, state components, Ticket type |
+| `nodes.go` | 9 workflow nodes + wrappers |
 
-| Task | File | ADRs |
-|------|------|------|
-| GitContext interface | `git.go` | 001, 002 |
-| CreateWorktree | `git.go` | 001, 003 |
-| CleanupWorktree | `git.go` | 001 |
-| Commit, Push | `git.go` | 004 |
-| GitHub PR creation | `github.go` | 005 |
-| GitLab MR creation | `gitlab.go` | 005 |
+**Nodes implemented:**
+- `CreateWorktreeNode` - Creates isolated git worktree
+- `GenerateSpecNode` - Ticket → Technical spec
+- `ImplementNode` - Spec → Code changes
+- `ReviewNode` - Code → Review results
+- `FixFindingsNode` - Review → Fixed code
+- `RunTestsNode` - Execute test suite
+- `CheckLintNode` - Run linters
+- `CreatePRNode` - Code → Pull request
+- `CleanupNode` - Cleanup worktree
 
-**Read first**: `.spec/phases/phase-1-git-primitives.md`
-
-### Phase 2: Claude CLI Wrapper (Week 2)
-Can run parallel with Phase 1.
-
-| Task | File | ADRs |
-|------|------|------|
-| ClaudeCLI interface | `claude.go` | 006 |
-| Run with prompt | `claude.go` | 006 |
-| Prompt template loading | `prompt.go` | 007 |
-| Context file handling | `claude.go` | 008 |
-| Output parsing | `claude.go` | 009 |
-| Session/multi-turn | `claude.go` | 010 |
-
-**Read first**: `.spec/phases/phase-2-claude-cli.md`
-
-### Phase 3: Transcript Management (Week 3)
-Can run parallel.
-
-| Task | File | ADRs |
-|------|------|------|
-| TranscriptManager | `transcript.go` | 011, 012 |
-| StartRun, RecordTurn | `transcript.go` | 011 |
-| EndRun | `transcript.go` | 011 |
-| View/Export | `transcript.go` | 013 |
-| Search | `transcript.go` | 014 |
-
-**Read first**: `.spec/phases/phase-3-transcripts.md`
-
-### Phase 4: Artifact Management (Week 4)
-Can run parallel.
-
-| Task | File | ADRs |
-|------|------|------|
-| ArtifactManager | `artifact.go` | 015 |
-| SaveArtifact | `artifact.go` | 015, 017 |
-| LoadArtifact | `artifact.go` | 015 |
-| ListArtifacts | `artifact.go` | 015 |
-| Cleanup/retention | `artifact.go` | 016 |
-
-**Read first**: `.spec/phases/phase-4-artifacts.md`
-
-### Phase 5: Workflow Nodes (Week 5)
-Requires Phases 1-4 complete.
-
-| Node | File | Spec |
-|------|------|------|
-| CreateWorktreeNode | `nodes.go` | features/nodes/generate-spec.md |
-| GenerateSpecNode | `nodes.go` | features/nodes/generate-spec.md |
-| ImplementNode | `nodes.go` | features/nodes/implement.md |
-| ReviewNode | `nodes.go` | features/nodes/review-code.md |
-| FixFindingsNode | `nodes.go` | features/nodes/fix-findings.md |
-| CreatePRNode | `nodes.go` | features/nodes/create-pr.md |
-| RunTestsNode | `nodes.go` | features/nodes/run-tests.md |
-| CheckLintNode | `nodes.go` | features/nodes/check-lint.md |
-
-**Read first**: `.spec/phases/phase-5-workflow-nodes.md`
-
-### Phase 6: Polish (Week 6)
-Final integration and documentation.
-
-- Integration tests
-- Documentation
-- Examples
-- Release prep
-
-**Read first**: `.spec/phases/phase-6-polish.md`
+**Wrappers:**
+- `WithRetry` - Add retry logic
+- `WithTranscript` - Record to transcript
+- `WithTiming` - Track duration
 
 ---
 
-## Key Design Decisions
+## Current State
 
-**Read these ADRs before coding:**
+```bash
+# All tests pass
+go test -race ./...
+# ok  github.com/anthropic/devflow  11.666s  coverage: 52.3%
 
-| Decision | ADR | Summary |
-|----------|-----|---------|
-| Shell out to git | 001 | Use `exec.Command("git", ...)` not go-git |
-| Shell out to claude | 006 | Use `exec.Command("claude", ...)` not API |
-| JSON file storage | 012 | No database, just JSON files |
-| grep for search | 014 | No search engine, shell out to grep |
-| Context injection | 018 | Pass services via `context.Context` |
-| State composition | 019 | Embed standard state structs |
-
----
-
-## File Structure to Create
-
-```
-devflow/
-├── git.go              # GitContext implementation
-├── github.go           # GitHub PR provider
-├── gitlab.go           # GitLab MR provider
-├── claude.go           # ClaudeCLI implementation
-├── prompt.go           # Prompt template loading
-├── transcript.go       # TranscriptManager
-├── artifact.go         # ArtifactManager
-├── nodes.go            # Pre-built workflow nodes
-├── state.go            # DevState and embedded types
-├── errors.go           # Error types
-├── context.go          # Context key helpers
-├── options.go          # Functional options
-├── git_test.go         # Unit tests
-├── claude_test.go
-├── transcript_test.go
-├── artifact_test.go
-├── nodes_test.go
-└── integration/
-    ├── git_test.go     # Integration tests
-    ├── claude_test.go
-    └── workflow_test.go
+# No vet warnings
+go vet ./...
 ```
 
----
-
-## Tracking Progress
-
-Update `.spec/tracking/PROGRESS.md` as you complete items.
-
-Format:
-```markdown
-| Phase 1 Task | Status | Notes |
-|--------------|--------|-------|
-| GitContext interface | Complete | git.go:15-45 |
-| CreateWorktree | In Progress | |
-```
+**Files**: 28 Go files
+**Test Coverage**: 52.3% (acceptable - many paths need real git/Claude)
 
 ---
 
-## Success Criteria
+## 🔲 Phase 6: Polish & Integration (Current Work)
 
-Phase is complete when:
-- [ ] All tasks implemented per spec
-- [ ] Unit tests written and passing
-- [ ] `go test -race ./...` passes
-- [ ] Code follows Go conventions
-- [ ] No `TODO` or `FIXME` left without tracking issue
+See `.spec/phases/phase-6-polish.md` for complete details.
+
+### Priority 1: Documentation
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Update godoc comments | Pending | All exported types/funcs |
+| Ensure examples compile | Pending | In godoc and README |
+| Update README.md | Pending | Quick start, installation |
+| Update docs/ directory | Pending | Getting started, guides |
+
+### Priority 2: Examples
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `examples/ticket-to-pr/` | Pending | Full workflow demo |
+| `examples/code-review/` | Pending | PR review demo |
+| `examples/custom-workflow/` | Pending | Custom state/nodes |
+
+### Priority 3: CI/CD
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `.github/workflows/ci.yml` | Pending | Test + vet on push |
+| Add golangci-lint | Optional | Code quality |
+
+### Priority 4: Release Prep
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `CHANGELOG.md` | Pending | v0.1.0 changes |
+| `LICENSE` | Pending | MIT license |
+| Version tagging | Pending | v0.1.0 tag |
 
 ---
 
-## Getting Started
+## Getting Started with Phase 6
 
-1. **Read** `.spec/PLANNING.md` for design philosophy
-2. **Read** `.spec/phases/phase-1-git-primitives.md`
-3. **Read** ADRs 001-005 in `.spec/decisions/`
-4. **Create** `git.go` with GitContext interface
-5. **Implement** CreateWorktree first (foundational)
-6. **Test** with real git repo
-7. **Update** PROGRESS.md
+1. **Read** `.spec/phases/phase-6-polish.md` for full requirements
+2. **Verify** tests pass: `go test -race ./...`
+3. **Start** with documentation (godoc comments on key types)
+4. **Create** example applications
+5. **Add** CI workflow
+6. **Prepare** for release
+7. **Update** `.spec/tracking/PROGRESS.md` as you complete items
+
+---
+
+## Key Files to Know
+
+| File | When to Read |
+|------|--------------|
+| `.spec/phases/phase-6-polish.md` | Phase 6 requirements |
+| `.spec/tracking/PROGRESS.md` | Current progress |
+| `CLAUDE.md` | Project overview for agents |
+| `docs/API_REFERENCE.md` | API documentation |
+| `docs/ARCHITECTURE.md` | Design patterns |
+
+---
+
+## Quality Checklist (Phase 6 Exit Criteria)
+
+### Code Quality
+- [ ] All tests passing
+- [ ] No golangci-lint warnings (if added)
+- [ ] No race conditions (tested with -race)
+
+### Documentation Quality
+- [ ] All public APIs have godoc comments
+- [ ] Examples compile and work
+- [ ] README is accurate and helpful
+- [ ] CLAUDE.md reflects current state
+
+### Release Quality
+- [ ] Version tagged (v0.1.0)
+- [ ] CHANGELOG complete
+- [ ] LICENSE present
+- [ ] CI passing
+- [ ] Examples working
 
 ---
 
 ## Questions?
 
-If something in the specs is unclear:
-1. Check related ADRs for rationale
-2. Check `knowledge/INTEGRATION_PATTERNS.md` for examples
-3. Default to simplicity (shell out, JSON files, grep)
-4. Flag in PROGRESS.md if blocked
+If something is unclear:
+1. Check related ADRs in `.spec/decisions/`
+2. Check `docs/` for existing documentation
+3. Check `knowledge/INTEGRATION_PATTERNS.md` for patterns
+4. Default to simplicity
+5. Flag in PROGRESS.md if blocked
 
 ---
 
 ## Previous Session Summary
 
-**Completed**: Full specification session
-- Created directory structure
-- Wrote 20 ADRs with context, decision, alternatives, consequences, code examples
-- Wrote 6 phase specs with task breakdowns and acceptance criteria
-- Wrote 8 feature specs with API documentation
-- Wrote 7 node specs with signatures, prompts, error cases, tests
-- Wrote integration patterns document
-- All tracked in PROGRESS.md (42/42 complete)
+**Session**: Phase 5 Implementation (Workflow Nodes)
 
-**Next**: Implementation Phase 1 - Git Primitives
+**Completed**:
+- Context injection helpers (`context.go`)
+  - `With*/From*` pattern for all services
+  - `DevServices` bundle with `InjectAll`
+  - `MustFrom*` variants that panic
+- State types (`state.go`)
+  - `DevState` with embedded components
+  - `GitState`, `SpecState`, `ImplementState`, etc.
+  - `Ticket` type for input data
+  - `Validate()` with requirements
+- Workflow nodes (`nodes.go`)
+  - 9 nodes matching Phase 5 spec
+  - Node wrappers: `WithRetry`, `WithTranscript`, `WithTiming`
+  - `ReviewRouter` for conditional routing
+- Tests (`nodes_test.go`)
+  - 60+ test cases
+  - All passing with race detection
+
+**Tests**: All passing
+**Coverage**: 52.3%
+
+**Next**: Phase 6 - Polish & Integration

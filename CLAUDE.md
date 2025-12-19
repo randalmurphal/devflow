@@ -2,6 +2,20 @@
 
 **Go library for AI-powered development workflows.** Git operations, Claude CLI integration, transcript management, and artifact storage.
 
+## Implementation Status
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 1 - Git Primitives | ✅ Complete | GitContext, worktrees, branches, PRs |
+| 2 - Claude CLI | ✅ Complete | ClaudeCLI wrapper, prompts, context |
+| 3 - Transcripts | ✅ Complete | Recording, search, view, export |
+| 4 - Artifacts | ✅ Complete | Save, load, lifecycle, types |
+| 5 - Workflow Nodes | ✅ Complete | 9 nodes, state, context injection |
+| 6 - Polish | 🔲 Pending | Documentation, examples, CI/CD |
+
+**Tests**: All passing with race detection (`go test -race ./...`)
+**Coverage**: 52.3%
+
 ---
 
 ## Vision
@@ -112,15 +126,30 @@ data, err := artifacts.LoadArtifact("run-123", "output.json")
 
 ```
 devflow/
-├── git.go              # GitContext interface and implementation
-├── github.go           # GitHub PR operations
-├── gitlab.go           # GitLab MR operations
-├── claude.go           # Claude CLI wrapper
-├── transcript.go       # Transcript management
-├── artifact.go         # Artifact storage
-├── errors.go           # Error types
-└── tests/
-    └── integration/    # Integration tests (require git, Claude)
+├── git.go                  # GitContext - worktrees, branches, commits
+├── branch.go               # BranchNamer - naming conventions
+├── commit.go               # CommitMessage - conventional commits
+├── pr.go                   # PRProvider interface, PRBuilder
+├── github.go               # GitHub PR provider
+├── gitlab.go               # GitLab MR provider
+├── claude.go               # ClaudeCLI wrapper
+├── prompt.go               # PromptLoader - template loading
+├── context.go              # ContextBuilder + service injection helpers
+├── transcript.go           # Transcript types
+├── transcript_store.go     # FileTranscriptStore - storage
+├── transcript_search.go    # TranscriptSearcher - grep-based search
+├── transcript_view.go      # TranscriptViewer - display/export
+├── artifact.go             # ArtifactManager - save/load
+├── artifact_types.go       # ReviewResult, TestOutput, LintOutput
+├── artifact_lifecycle.go   # LifecycleManager - cleanup/archive
+├── state.go                # DevState, state components, Ticket
+├── nodes.go                # 9 workflow nodes + wrappers
+├── errors.go               # Error types
+├── *_test.go               # Unit tests for each file
+└── prompts/                # Default prompt templates
+    ├── generate-spec.txt
+    ├── implement.txt
+    └── review-code.txt
 ```
 
 ---
@@ -280,16 +309,14 @@ Complete specifications are in `.spec/`. **Read these before implementing.**
 
 ### Implementation Order
 
-Follow phases in order. Each phase builds on the previous:
-
-| Phase | Focus | Dependencies |
-|-------|-------|--------------|
-| 1 | Git Primitives | None (foundation) |
-| 2 | Claude CLI | None (parallel with Phase 1) |
-| 3 | Transcripts | None (parallel) |
-| 4 | Artifacts | None (parallel) |
-| 5 | Workflow Nodes | Phases 1-4 complete |
-| 6 | Polish | Phase 5 complete |
+| Phase | Focus | Status |
+|-------|-------|--------|
+| 1 | Git Primitives | ✅ Complete |
+| 2 | Claude CLI | ✅ Complete |
+| 3 | Transcripts | ✅ Complete |
+| 4 | Artifacts | ✅ Complete |
+| 5 | Workflow Nodes | ✅ Complete |
+| 6 | Polish | 🔲 Next |
 
 ### Key Design Decisions
 
@@ -299,10 +326,18 @@ Follow phases in order. Each phase builds on the previous:
 - **grep for search** (ADR-014): Use grep for transcript search, not a search engine
 - **Context injection** (ADR-018): Pass services via context.Context, not state
 
-### Before Implementing
+### Phase 6 Tasks (Current Work)
 
-1. Read the relevant ADR in `decisions/`
-2. Read the feature spec in `features/`
-3. Read the phase spec in `phases/`
-4. Check `PLANNING.md` for design philosophy
-5. Update `tracking/PROGRESS.md` as you complete items
+See `.spec/phases/phase-6-polish.md` for full details:
+
+1. **Documentation**: Update godoc comments, ensure examples compile
+2. **Examples**: Create example applications in `examples/`
+3. **CI/CD**: Add GitHub Actions workflow
+4. **Release Prep**: CHANGELOG.md, LICENSE, version tagging
+
+### Before Continuing
+
+1. Read `.spec/phases/phase-6-polish.md` for Phase 6 requirements
+2. Check `.spec/tracking/PROGRESS.md` for current status
+3. Run `go test -race ./...` to verify all tests pass
+4. Update `tracking/PROGRESS.md` as you complete items
