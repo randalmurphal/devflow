@@ -41,6 +41,9 @@ Dev workflow primitives for AI agents. Builds on flowgraph to provide developmen
 | **TranscriptManager** | Recording and storing conversation transcripts | `TranscriptManager` |
 | **ArtifactManager** | Storing run artifacts (files, outputs) | `ArtifactManager` |
 | **Notifier** | Workflow event notifications (Slack, webhook) | `Notifier` |
+| **TaskType** | Task-based model selection | `TaskType`, `NewTaskSelector` |
+| **http.Client** | HTTP client for integrations | `http.Client` |
+| **testutil** | Test utilities (git repos, contexts, fixtures) | Various helpers |
 
 ---
 
@@ -198,6 +201,7 @@ devflow/
 ├── state.go                # DevState, state components, Ticket
 ├── runner.go               # CommandRunner interface + implementations
 ├── errors.go               # Error types
+├── task.go                 # TaskType + model selection
 │
 ├── nodes.go                # NodeFunc type, NodeConfig, wrappers
 ├── node_worktree.go        # CreateWorktreeNode, CleanupNode
@@ -207,6 +211,16 @@ devflow/
 ├── node_testing.go         # RunTestsNode
 ├── node_lint.go            # CheckLintNode
 ├── node_pr.go              # CreatePRNode
+│
+├── http/                   # HTTP client utilities for integrations
+│   ├── client.go           # HTTPClient with retry
+│   ├── pagination.go       # PageIterator for paginated APIs
+│   └── errors.go           # API error types
+│
+├── testutil/               # Test utilities
+│   ├── git.go              # SetupTestRepo, branches, commits
+│   ├── context.go          # TestContext helpers
+│   └── fixtures.go         # LoadFixture, TempFile
 │
 ├── *_test.go               # Unit tests for each file
 └── prompts/                # Default prompt templates
