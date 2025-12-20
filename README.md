@@ -11,6 +11,7 @@
 
 - **Git Operations** - Worktrees, commits, branches, PRs (GitHub & GitLab)
 - **LLM Integration** - Uses [flowgraph](https://github.com/randalmurphal/flowgraph)'s `llm.Client` interface
+- **LLM Utilities** - Token counting, text truncation, prompt templates, response parsing
 - **Transcripts** - Record, search, and export AI conversations
 - **Artifacts** - Store and manage workflow outputs with lifecycle management
 - **Notifications** - Slack, webhook, and logging integrations
@@ -217,6 +218,28 @@ devflow provides pre-built nodes for common development workflows:
 - [docs/OVERVIEW.md](docs/OVERVIEW.md) - Detailed concepts and vision
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Component design and data flow
 - [docs/API_REFERENCE.md](docs/API_REFERENCE.md) - Complete public API
+
+## Package Structure
+
+```
+github.com/randalmurphal/devflow/
+├── artifact/      # Artifact storage and lifecycle
+├── context/       # Context injection helpers
+├── git/           # Git operations (worktrees, commits, branches)
+├── http/          # HTTP client with connection pooling
+├── llm/           # LLM utilities
+│   ├── parser/    # Response parsing (JSON, YAML, code blocks)
+│   ├── template/  # Prompt template engine (Handlebars-style)
+│   ├── tokens/    # Token counting and budget management
+│   └── truncate/  # Text truncation strategies
+├── notify/        # Notifications (Slack, webhooks)
+├── pr/            # Pull request operations (GitHub, GitLab)
+├── prompt/        # Prompt loading
+├── task/          # Task primitives
+├── testutil/      # Test utilities
+├── transcript/    # Conversation transcripts
+└── workflow/      # Pre-built workflow nodes
+```
 
 ## Ecosystem
 

@@ -9,6 +9,7 @@ require (
 	github.com/randalmurphal/flowgraph v0.0.0-00010101000000-000000000000
 	github.com/xanzy/go-gitlab v0.115.0
 	golang.org/x/oauth2 v0.34.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 replace github.com/randalmurphal/flowgraph => ../flowgraph
