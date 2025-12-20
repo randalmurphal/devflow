@@ -33,32 +33,24 @@ package main
 
 import (
     "fmt"
-    "github.com/randalmurphal/devflow"
+    "github.com/randalmurphal/devflow/git"
 )
 
 func main() {
     // Create git context for repository operations
-    git, _ := devflow.NewGitContext(".")
+    gitCtx, _ := git.NewContext(".")
 
     // Create an isolated worktree for feature work
-    worktree, _ := git.CreateWorktree("feature/new-api")
-    defer git.CleanupWorktree(worktree)
+    worktree, _ := gitCtx.CreateWorktree("feature/new-api")
+    defer gitCtx.CleanupWorktree(worktree)
 
     // Check status and branch
-    branch, _ := git.CurrentBranch()
-    clean, _ := git.IsClean()
+    branch, _ := gitCtx.CurrentBranch()
+    clean, _ := gitCtx.IsClean()
     fmt.Printf("Branch: %s, Clean: %v\n", branch, clean)
 
     // Commit changes
-    _ = git.Commit("Add new feature", "main.go", "utils.go")
-
-    // Create PR (with GitHub provider configured)
-    pr, _ := git.CreatePR(devflow.PROptions{
-        Title: "Add new feature",
-        Body:  "Implements the new API endpoint",
-        Base:  "main",
-    })
-    fmt.Printf("PR URL: %s\n", pr.URL)
+    _ = gitCtx.Commit("Add new feature")
 }
 ```
 
@@ -71,8 +63,11 @@ import (
     "context"
     "fmt"
 
-    "github.com/randalmurphal/devflow"
-    "github.com/randalmurphal/flowgraph"
+    devcontext "github.com/randalmurphal/devflow/context"
+    "github.com/randalmurphal/devflow/git"
+    "github.com/randalmurphal/devflow/notify"
+    "github.com/randalmurphal/devflow/workflow"
+    "github.com/randalmurphal/flowgraph/pkg/flowgraph"
     "github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
 )
 
@@ -80,25 +75,25 @@ func main() {
     ctx := context.Background()
 
     // Create services
-    git, _ := devflow.NewGitContext(".")
+    gitCtx, _ := git.NewContext(".")
     client := llm.NewClaudeCLI(
         llm.WithModel("claude-sonnet-4-20250514"),
         llm.WithWorkdir("."),
     )
-    notifier := devflow.NewSlackNotifier("https://hooks.slack.com/...")
+    notifier := notify.NewSlack("https://hooks.slack.com/...")
 
     // Inject services into context
-    ctx = devflow.WithGitContext(ctx, git)
-    ctx = devflow.WithLLMClient(ctx, client)
-    ctx = devflow.WithNotifier(ctx, notifier)
+    ctx = devcontext.WithGit(ctx, gitCtx)
+    ctx = devcontext.WithLLM(ctx, client)
+    ctx = notify.WithNotifier(ctx, notifier)
 
     // Build workflow graph using flowgraph
-    graph := flowgraph.NewGraph[devflow.DevState]().
-        AddNode("create-worktree", devflow.CreateWorktreeNode).
-        AddNode("generate-spec", devflow.GenerateSpecNode).
-        AddNode("implement", devflow.ImplementNode).
-        AddNode("review", devflow.ReviewNode).
-        AddNode("create-pr", devflow.CreatePRNode).
+    graph := flowgraph.NewGraph[workflow.State]().
+        AddNode("create-worktree", workflow.CreateWorktreeNode).
+        AddNode("generate-spec", workflow.GenerateSpecNode).
+        AddNode("implement", workflow.ImplementNode).
+        AddNode("review", workflow.ReviewNode).
+        AddNode("create-pr", workflow.CreatePRNode).
         AddEdge("create-worktree", "generate-spec").
         AddEdge("generate-spec", "implement").
         AddEdge("implement", "review").
@@ -107,7 +102,7 @@ func main() {
         SetEntry("create-worktree")
 
     // Execute workflow
-    state := devflow.NewDevState("ticket-to-pr")
+    state := workflow.NewState("ticket-to-pr")
     result, _ := graph.Execute(ctx, state)
     fmt.Printf("PR created: %s\n", result.PR.URL)
 }
@@ -116,37 +111,43 @@ func main() {
 ### Transcript Management
 
 ```go
-store, _ := devflow.NewFileTranscriptStore(".devflow/runs")
+import "github.com/randalmurphal/devflow/transcript"
+
+store, _ := transcript.NewFileStore(transcript.StoreConfig{
+    BaseDir: ".devflow/runs",
+})
 
 // Start a run
 runID := "run-123"
-_ = store.StartRun(runID, devflow.RunMetadata{
+_ = store.StartRun(runID, transcript.RunMetadata{
     FlowID: "code-review",
     Input:  map[string]any{"pr": 456},
 })
 
 // Record conversation turns
-_ = store.RecordTurn(runID, devflow.Turn{
+_ = store.RecordTurn(runID, transcript.Turn{
     Role:    "user",
     Content: "Review this pull request",
 })
-_ = store.RecordTurn(runID, devflow.Turn{
+_ = store.RecordTurn(runID, transcript.Turn{
     Role:    "assistant",
     Content: "I'll analyze the changes...",
 })
 
 // End run
-_ = store.EndRun(runID, devflow.RunStatusCompleted)
+_ = store.EndRun(runID, transcript.RunStatusCompleted)
 
 // Search transcripts
-searcher := devflow.NewTranscriptSearcher(".devflow/runs")
+searcher := transcript.NewSearcher(".devflow/runs")
 results, _ := searcher.Search("error handling")
 ```
 
 ### Artifact Storage
 
 ```go
-artifacts := devflow.NewArtifactManager(devflow.ArtifactConfig{
+import "github.com/randalmurphal/devflow/artifact"
+
+artifacts := artifact.NewManager(artifact.Config{
     BaseDir:       ".devflow/runs",
     CompressAbove: 1024, // Compress files > 1KB
 })
@@ -159,10 +160,9 @@ _ = artifacts.SaveArtifact("run-123", "output.json", jsonData)
 data, _ := artifacts.LoadArtifact("run-123", "spec.md")
 
 // Lifecycle management
-lifecycle := devflow.NewLifecycleManager(devflow.LifecycleConfig{
-    BaseDir:        ".devflow/runs",
+lifecycle := artifact.NewLifecycleManager(artifacts, artifact.LifecycleConfig{
     RetentionDays:  30,
-    ArchiveEnabled: true,
+    ArchiveAfter:   7,
 })
 _ = lifecycle.Cleanup() // Archive/delete old runs
 ```
@@ -170,22 +170,28 @@ _ = lifecycle.Cleanup() // Archive/delete old runs
 ### Notifications
 
 ```go
+import "github.com/randalmurphal/devflow/notify"
+
 // Slack notifications
-slack := devflow.NewSlackNotifier(webhookURL,
-    devflow.WithSlackChannel("#dev-alerts"),
-    devflow.WithSlackUsername("devflow-bot"),
+slack := notify.NewSlack(webhookURL,
+    notify.WithChannel("#dev-alerts"),
+    notify.WithUsername("devflow-bot"),
 )
 
 // Webhook notifications
-webhook := devflow.NewWebhookNotifier(url, headers)
+webhook := notify.NewWebhook(url, headers)
 
 // Combine multiple notifiers
-multi := devflow.NewMultiNotifier(slack, webhook)
+multi := notify.NewMulti(slack, webhook)
 
 // Inject and use
-ctx = devflow.WithNotifier(ctx, multi)
-devflow.NotifyRunStarted(ctx, state)
-devflow.NotifyRunCompleted(ctx, state)
+ctx = notify.WithNotifier(ctx, multi)
+
+// Send notification
+_ = multi.Notify(ctx, notify.Event{
+    Type:    notify.EventRunCompleted,
+    Message: "Workflow completed",
+})
 ```
 
 ## Workflow Nodes

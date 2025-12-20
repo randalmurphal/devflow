@@ -7,7 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/randalmurphal/devflow"
+	"github.com/randalmurphal/devflow/artifact"
+	devcontext "github.com/randalmurphal/devflow/context"
+	"github.com/randalmurphal/devflow/git"
+	"github.com/randalmurphal/devflow/transcript"
 	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
 	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
 )
@@ -59,33 +62,33 @@ func setupContext(t *testing.T, repoPath string, mockLLM llm.Client) flowgraph.C
 	baseCtx := context.Background()
 
 	// Setup git context
-	git, err := devflow.NewGitContext(repoPath)
+	gitCtx, err := git.NewContext(repoPath)
 	if err != nil {
-		t.Fatalf("NewGitContext: %v", err)
+		t.Fatalf("git.NewContext: %v", err)
 	}
-	baseCtx = devflow.WithGitContext(baseCtx, git)
+	baseCtx = devcontext.WithGit(baseCtx, gitCtx)
 
 	// Setup LLM client
 	if mockLLM != nil {
-		baseCtx = devflow.WithLLMClient(baseCtx, mockLLM)
+		baseCtx = devcontext.WithLLM(baseCtx, mockLLM)
 	}
 
 	// Setup mock command runner for test isolation
-	runner := devflow.NewMockRunner()
-	baseCtx = devflow.WithCommandRunner(baseCtx, runner)
+	runner := git.NewMockRunner()
+	baseCtx = devcontext.WithRunner(baseCtx, runner)
 
 	// Setup artifact manager
-	artifacts := devflow.NewArtifactManager(devflow.ArtifactConfig{
+	artifacts := artifact.NewManager(artifact.Config{
 		BaseDir: filepath.Join(repoPath, ".devflow", "artifacts"),
 	})
-	baseCtx = devflow.WithArtifactManager(baseCtx, artifacts)
+	baseCtx = devcontext.WithArtifact(baseCtx, artifacts)
 
 	// Setup transcript manager
-	transcripts, err := devflow.NewTranscriptManager(devflow.TranscriptConfig{
+	transcripts, err := transcript.NewFileStore(transcript.StoreConfig{
 		BaseDir: filepath.Join(repoPath, ".devflow", "transcripts"),
 	})
 	if err == nil {
-		baseCtx = devflow.WithTranscriptManager(baseCtx, transcripts)
+		baseCtx = devcontext.WithTranscript(baseCtx, transcripts)
 	}
 
 	return flowgraph.NewContext(baseCtx, flowgraph.WithLLM(mockLLM))

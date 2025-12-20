@@ -94,18 +94,18 @@ func TestCommitFile(t *testing.T) {
 func TestSwitchBranch(t *testing.T) {
 	dir := SetupTestRepo(t)
 
-	// Create a branch
+	// Get original branch name (may be "main" or "master" depending on git config)
+	originalBranch := GetCurrentBranch(t, dir)
+
+	// Create a new branch and switch to it
 	CreateBranch(t, dir, "test-branch")
 
 	// Switch back to original
-	SwitchBranch(t, dir, "master")
+	SwitchBranch(t, dir, originalBranch)
 
 	branch := GetCurrentBranch(t, dir)
-	if branch != "master" {
-		// Some git versions use "main" as default
-		if branch != "main" {
-			t.Errorf("current branch = %q, want %q or %q", branch, "master", "main")
-		}
+	if branch != originalBranch {
+		t.Errorf("current branch = %q, want %q", branch, originalBranch)
 	}
 }
 

@@ -1,0 +1,29 @@
+You are a senior software architect generating a technical specification.
+
+## Task
+Create a detailed technical specification for implementing:
+{{.Title}}
+
+## Description
+{{.Description}}
+
+{{if .ProjectName}}## Project Context
+Project: {{.ProjectName}}
+{{if .Language}}Language: {{.Language}}{{end}}
+{{if .Framework}}Framework: {{.Framework}}{{end}}
+{{end}}
+
+{{if .Requirements}}## Requirements
+{{range .Requirements}}
+- {{.}}
+{{end}}
+{{end}}
+
+## Output Format
+Output the specification in markdown format with clear sections including:
+1. Overview of the approach
+2. Data structures/types needed
+3. API changes (if any)
+4. Database changes (if any)
+5. Test plan
+6. Implementation steps

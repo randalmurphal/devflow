@@ -3,7 +3,7 @@ package integrationtest
 import (
 	"testing"
 
-	"github.com/randalmurphal/devflow"
+	"github.com/randalmurphal/devflow/workflow"
 	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,9 +12,9 @@ import (
 // TestGraphConstruction verifies that devflow nodes can be used to build a flowgraph.
 func TestGraphConstruction(t *testing.T) {
 	// Build a simple linear graph with devflow nodes
-	graph := flowgraph.NewGraph[devflow.DevState]().
-		AddNode("create-worktree", devflow.CreateWorktreeNode).
-		AddNode("cleanup", devflow.CleanupNode).
+	graph := flowgraph.NewGraph[workflow.State]().
+		AddNode("create-worktree", workflow.CreateWorktreeNode).
+		AddNode("cleanup", workflow.CleanupNode).
 		AddEdge("create-worktree", "cleanup").
 		AddEdge("cleanup", flowgraph.END).
 		SetEntry("create-worktree")
@@ -28,25 +28,25 @@ func TestGraphConstruction(t *testing.T) {
 // TestGraphWithAllNodes verifies that all devflow nodes compile together.
 func TestGraphWithAllNodes(t *testing.T) {
 	// Build a comprehensive graph with all node types
-	graph := flowgraph.NewGraph[devflow.DevState]().
+	graph := flowgraph.NewGraph[workflow.State]().
 		// Worktree management
-		AddNode("create-worktree", devflow.CreateWorktreeNode).
+		AddNode("create-worktree", workflow.CreateWorktreeNode).
 		// Spec generation
-		AddNode("generate-spec", devflow.GenerateSpecNode).
+		AddNode("generate-spec", workflow.GenerateSpecNode).
 		// Implementation
-		AddNode("implement", devflow.ImplementNode).
+		AddNode("implement", workflow.ImplementNode).
 		// Quality checks
-		AddNode("lint", devflow.CheckLintNode).
-		AddNode("test", devflow.RunTestsNode).
+		AddNode("lint", workflow.CheckLintNode).
+		AddNode("test", workflow.RunTestsNode).
 		// Review
-		AddNode("review", devflow.ReviewNode).
-		AddNode("fix-findings", devflow.FixFindingsNode).
+		AddNode("review", workflow.ReviewNode).
+		AddNode("fix-findings", workflow.FixFindingsNode).
 		// PR creation
-		AddNode("create-pr", devflow.CreatePRNode).
+		AddNode("create-pr", workflow.CreatePRNode).
 		// Notification
-		AddNode("notify", devflow.NotifyNode).
+		AddNode("notify", workflow.NotifyNode).
 		// Cleanup
-		AddNode("cleanup", devflow.CleanupNode).
+		AddNode("cleanup", workflow.CleanupNode).
 		// Define edges
 		AddEdge("create-worktree", "generate-spec").
 		AddEdge("generate-spec", "implement").
@@ -66,21 +66,21 @@ func TestGraphWithAllNodes(t *testing.T) {
 }
 
 // TestNodeWrappers verifies that wrapped nodes compile correctly.
-// Note: devflow.NodeFunc needs to be converted to flowgraph.NodeFunc[DevState]
+// Note: workflow.NodeFunc needs to be converted to flowgraph.NodeFunc[State]
 func TestNodeWrappers(t *testing.T) {
 	// Create wrapped nodes and convert to flowgraph type
-	specWithRetry := flowgraph.NodeFunc[devflow.DevState](
-		devflow.WithRetry(devflow.GenerateSpecNode, 3),
+	specWithRetry := flowgraph.NodeFunc[workflow.State](
+		workflow.WithRetry(workflow.GenerateSpecNode, 3),
 	)
-	specWithTiming := flowgraph.NodeFunc[devflow.DevState](
-		devflow.WithTiming(devflow.GenerateSpecNode),
+	specWithTiming := flowgraph.NodeFunc[workflow.State](
+		workflow.WithTiming(workflow.GenerateSpecNode),
 	)
-	specWithTranscript := flowgraph.NodeFunc[devflow.DevState](
-		devflow.WithTranscript(devflow.GenerateSpecNode, "generate-spec"),
+	specWithTranscript := flowgraph.NodeFunc[workflow.State](
+		workflow.WithTranscript(workflow.GenerateSpecNode, "generate-spec"),
 	)
 
 	// Use in a graph
-	graph := flowgraph.NewGraph[devflow.DevState]().
+	graph := flowgraph.NewGraph[workflow.State]().
 		AddNode("spec-retry", specWithRetry).
 		AddNode("spec-timing", specWithTiming).
 		AddNode("spec-transcript", specWithTranscript).
@@ -94,18 +94,18 @@ func TestNodeWrappers(t *testing.T) {
 	assert.NotNil(t, compiled)
 }
 
-// TestDevStatePassthrough verifies that DevState passes through nodes correctly.
+// TestDevStatePassthrough verifies that State passes through nodes correctly.
 func TestDevStatePassthrough(t *testing.T) {
 	repoPath := setupTempRepo(t)
 
 	// Create a simple node that just passes state through
-	passthrough := func(ctx flowgraph.Context, state devflow.DevState) (devflow.DevState, error) {
+	passthrough := func(ctx flowgraph.Context, state workflow.State) (workflow.State, error) {
 		// Modify state to prove it passes through
 		state.TicketID = "TK-PASSTHROUGH"
 		return state, nil
 	}
 
-	graph := flowgraph.NewGraph[devflow.DevState]().
+	graph := flowgraph.NewGraph[workflow.State]().
 		AddNode("passthrough", passthrough).
 		AddEdge("passthrough", flowgraph.END).
 		SetEntry("passthrough")
@@ -117,7 +117,7 @@ func TestDevStatePassthrough(t *testing.T) {
 	ctx := setupContext(t, repoPath, nil)
 
 	// Execute
-	state := devflow.NewDevState("test-flow")
+	state := workflow.NewState("test-flow")
 	result, err := compiled.Run(ctx, state)
 	require.NoError(t, err)
 
@@ -132,13 +132,13 @@ func TestMultiNodeExecution(t *testing.T) {
 	// Create nodes that track execution order
 	order := []string{}
 
-	nodeA := func(ctx flowgraph.Context, state devflow.DevState) (devflow.DevState, error) {
+	nodeA := func(ctx flowgraph.Context, state workflow.State) (workflow.State, error) {
 		order = append(order, "A")
 		state.TicketID = "FROM_A"
 		return state, nil
 	}
 
-	nodeB := func(ctx flowgraph.Context, state devflow.DevState) (devflow.DevState, error) {
+	nodeB := func(ctx flowgraph.Context, state workflow.State) (workflow.State, error) {
 		order = append(order, "B")
 		// Verify state from A
 		if state.TicketID != "FROM_A" {
@@ -148,7 +148,7 @@ func TestMultiNodeExecution(t *testing.T) {
 		return state, nil
 	}
 
-	nodeC := func(ctx flowgraph.Context, state devflow.DevState) (devflow.DevState, error) {
+	nodeC := func(ctx flowgraph.Context, state workflow.State) (workflow.State, error) {
 		order = append(order, "C")
 		// Verify state from B
 		if state.Branch != "FROM_B" {
@@ -158,7 +158,7 @@ func TestMultiNodeExecution(t *testing.T) {
 		return state, nil
 	}
 
-	graph := flowgraph.NewGraph[devflow.DevState]().
+	graph := flowgraph.NewGraph[workflow.State]().
 		AddNode("a", nodeA).
 		AddNode("b", nodeB).
 		AddNode("c", nodeC).
@@ -171,7 +171,7 @@ func TestMultiNodeExecution(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := setupContext(t, repoPath, nil)
-	state := devflow.NewDevState("test")
+	state := workflow.NewState("test")
 
 	result, err := compiled.Run(ctx, state)
 	require.NoError(t, err)

@@ -8,7 +8,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -16,7 +15,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/randalmurphal/devflow"
+	"github.com/randalmurphal/devflow/artifact"
+	devcontext "github.com/randalmurphal/devflow/context"
+	"github.com/randalmurphal/devflow/git"
+	"github.com/randalmurphal/devflow/notify"
+	"github.com/randalmurphal/devflow/transcript"
 )
 
 func main() {
@@ -72,7 +75,7 @@ func initGitRepo(path string) error {
 		return err
 	}
 
-	runner := devflow.NewExecRunner()
+	runner := git.NewExecRunner()
 	_, err := runner.Run(path, "git", "init")
 	if err != nil {
 		return fmt.Errorf("git init: %w", err)
@@ -100,14 +103,14 @@ func initGitRepo(path string) error {
 }
 
 func gitExample(repoPath string) {
-	git, err := devflow.NewGitContext(repoPath)
+	gitCtx, err := git.NewContext(repoPath)
 	if err != nil {
 		fmt.Printf("Error creating GitContext: %v\n", err)
 		return
 	}
 
 	// Get current branch
-	branch, err := git.CurrentBranch()
+	branch, err := gitCtx.CurrentBranch()
 	if err != nil {
 		fmt.Printf("Error getting branch: %v\n", err)
 		return
@@ -115,7 +118,7 @@ func gitExample(repoPath string) {
 	fmt.Printf("Current branch: %s\n", branch)
 
 	// Check if working directory is clean
-	clean, err := git.IsClean()
+	clean, err := gitCtx.IsClean()
 	if err != nil {
 		fmt.Printf("Error checking clean: %v\n", err)
 		return
@@ -123,12 +126,12 @@ func gitExample(repoPath string) {
 	fmt.Printf("Working directory clean: %v\n", clean)
 
 	// Get repo path
-	repoPathResult := git.RepoPath()
+	repoPathResult := gitCtx.RepoPath()
 	fmt.Printf("Repo path: %s\n", repoPathResult)
 
 	// Create a branch (but don't switch to it)
 	newBranch := "feature/example-branch"
-	if err := git.CreateBranch(newBranch); err != nil {
+	if err := gitCtx.CreateBranch(newBranch); err != nil {
 		fmt.Printf("Error creating branch: %v\n", err)
 	} else {
 		fmt.Printf("Created branch: %s\n", newBranch)
@@ -137,7 +140,9 @@ func gitExample(repoPath string) {
 
 func transcriptExample(baseDir string) {
 	// Create transcript store directly for full functionality
-	store, err := devflow.NewFileTranscriptStore(baseDir)
+	store, err := transcript.NewFileStore(transcript.StoreConfig{
+		BaseDir: baseDir,
+	})
 	if err != nil {
 		fmt.Printf("Error creating store: %v\n", err)
 		return
@@ -145,7 +150,7 @@ func transcriptExample(baseDir string) {
 
 	// Start a new run
 	runID := fmt.Sprintf("example-run-%d", time.Now().Unix())
-	err = store.StartRun(runID, devflow.RunMetadata{
+	err = store.StartRun(runID, transcript.RunMetadata{
 		FlowID: "example-flow",
 		Input:  map[string]any{"task": "demo"},
 	})
@@ -156,7 +161,7 @@ func transcriptExample(baseDir string) {
 	fmt.Printf("Started run: %s\n", runID)
 
 	// Record some turns
-	err = store.RecordTurn(runID, devflow.Turn{
+	err = store.RecordTurn(runID, transcript.Turn{
 		Role:     "user",
 		Content:  "Hello, can you help me with Go?",
 		TokensIn: 10,
@@ -165,7 +170,7 @@ func transcriptExample(baseDir string) {
 		fmt.Printf("Error recording turn: %v\n", err)
 	}
 
-	err = store.RecordTurn(runID, devflow.Turn{
+	err = store.RecordTurn(runID, transcript.Turn{
 		Role:      "assistant",
 		Content:   "Of course! I'd be happy to help you with Go programming.",
 		TokensOut: 15,
@@ -174,11 +179,11 @@ func transcriptExample(baseDir string) {
 		fmt.Printf("Error recording turn: %v\n", err)
 	}
 
-	// Add cost tracking (available on FileTranscriptStore)
+	// Add cost tracking (available on FileStore)
 	_ = store.AddCost(runID, 0.001)
 
 	// End the run
-	err = store.EndRun(runID, devflow.RunStatusCompleted)
+	err = store.EndRun(runID, transcript.RunStatusCompleted)
 	if err != nil {
 		fmt.Printf("Error ending run: %v\n", err)
 		return
@@ -196,7 +201,7 @@ func transcriptExample(baseDir string) {
 
 func artifactExample(baseDir string) {
 	// Create artifact manager
-	artifacts := devflow.NewArtifactManager(devflow.ArtifactConfig{
+	artifacts := artifact.NewManager(artifact.Config{
 		BaseDir:       baseDir,
 		CompressAbove: 1024, // Compress files > 1KB
 	})
@@ -244,43 +249,46 @@ func artifactExample(baseDir string) {
 }
 
 func contextExample(baseDir, repoPath string) {
-	git, _ := devflow.NewGitContext(repoPath)
-	transcripts, _ := devflow.NewTranscriptManager(devflow.TranscriptConfig{
+	gitCtx, _ := git.NewContext(repoPath)
+	transcripts, _ := transcript.NewFileStore(transcript.StoreConfig{
 		BaseDir: baseDir,
 	})
-	artifacts := devflow.NewArtifactManager(devflow.ArtifactConfig{
+	artifacts := artifact.NewManager(artifact.Config{
 		BaseDir: baseDir,
 	})
 
 	// Create a log notifier (uses slog.Logger)
 	logger := slog.Default()
-	notifier := devflow.NewLogNotifier(logger)
+	notifier := notify.NewLogNotifier(logger)
 
-	// Inject services into context
-	ctx := context.Background()
-	ctx = devflow.WithGitContext(ctx, git)
-	ctx = devflow.WithTranscriptManager(ctx, transcripts)
-	ctx = devflow.WithArtifactManager(ctx, artifacts)
-	ctx = devflow.WithNotifier(ctx, notifier)
+	// Inject services into context using the services struct
+	services := &devcontext.Services{
+		Git:         gitCtx,
+		Transcripts: transcripts,
+		Artifacts:   artifacts,
+		Notifier:    notifier,
+	}
+
+	ctx := services.InjectAll(nil)
 
 	// Retrieve from context (as workflow nodes would)
-	if g := devflow.GitFromContext(ctx); g != nil {
+	if g := devcontext.Git(ctx); g != nil {
 		fmt.Println("GitContext injected successfully")
 	}
-	if t := devflow.TranscriptManagerFromContext(ctx); t != nil {
+	if t := devcontext.Transcript(ctx); t != nil {
 		fmt.Println("TranscriptManager injected successfully")
 	}
-	if a := devflow.ArtifactManagerFromContext(ctx); a != nil {
+	if a := devcontext.Artifact(ctx); a != nil {
 		fmt.Println("ArtifactManager injected successfully")
 	}
-	if n := devflow.NotifierFromContext(ctx); n != nil {
+	if n := notify.NotifierFromContext(ctx); n != nil {
 		fmt.Println("Notifier injected successfully")
 	}
 }
 
 func commitMessageExample() {
 	// Create a conventional commit message
-	msg := devflow.NewCommitMessage(devflow.CommitTypeFeat, "add user authentication").
+	msg := git.NewCommitMessage(git.CommitTypeFeat, "add user authentication").
 		WithScope("auth").
 		WithBody("Implements OAuth2 authentication flow with support for multiple providers.").
 		WithTicketRef("TK-123")

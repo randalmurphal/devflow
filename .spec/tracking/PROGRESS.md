@@ -251,6 +251,13 @@ See `.spec/INTEGRATION_REQUIREMENTS.md` for full details.
 
 | Date | Update |
 |------|--------|
+| 2025-12-20 | **Package restructuring complete** |
+| 2025-12-20 | Reorganized from flat 51-file root to domain-based subpackages |
+| 2025-12-20 | Created: git/, pr/, transcript/, artifact/, workflow/, notify/, context/, prompt/, task/ |
+| 2025-12-20 | All nodes now use devcontext injection functions |
+| 2025-12-20 | Created CLAUDE.md for all packages |
+| 2025-12-20 | Updated README.md with new import paths |
+| 2025-12-20 | All tests passing (including integration tests) |
 | 2025-12-19 | Specification session started |
 | 2025-12-19 | Directory structure created |
 | 2025-12-19 | PLANNING.md created |

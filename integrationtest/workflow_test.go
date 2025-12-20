@@ -6,14 +6,19 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/randalmurphal/devflow"
+	"github.com/randalmurphal/devflow/artifact"
+	devcontext "github.com/randalmurphal/devflow/context"
+	"github.com/randalmurphal/devflow/git"
+	"github.com/randalmurphal/devflow/notify"
+	"github.com/randalmurphal/devflow/transcript"
+	"github.com/randalmurphal/devflow/workflow"
 	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
 	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestSpecToImplementWorkflow tests a simple spec → implement workflow.
+// TestSpecToImplementWorkflow tests a simple spec -> implement workflow.
 func TestSpecToImplementWorkflow(t *testing.T) {
 	repoPath := setupTempRepo(t)
 
@@ -37,9 +42,9 @@ func Greet(name string) string {
 	)
 
 	// Build workflow graph
-	graph := flowgraph.NewGraph[devflow.DevState]().
-		AddNode("spec", devflow.GenerateSpecNode).
-		AddNode("implement", devflow.ImplementNode).
+	graph := flowgraph.NewGraph[workflow.State]().
+		AddNode("spec", workflow.GenerateSpecNode).
+		AddNode("implement", workflow.ImplementNode).
 		AddEdge("spec", "implement").
 		AddEdge("implement", flowgraph.END).
 		SetEntry("spec")
@@ -51,9 +56,9 @@ func Greet(name string) string {
 	ctx := setupContext(t, repoPath, mockLLM)
 
 	// Initialize state
-	state := devflow.NewDevState("spec-to-implement")
+	state := workflow.NewState("spec-to-implement")
 	state.TicketID = "TK-123"
-	state.Ticket = &devflow.Ticket{
+	state.Ticket = &workflow.Ticket{
 		ID:          "TK-123",
 		Title:       "Implement greeting function",
 		Description: "Create a simple greeting function that returns a personalized message",
@@ -74,7 +79,7 @@ func Greet(name string) string {
 	assert.GreaterOrEqual(t, mockLLM.CallCount(), 2, "LLM should be called at least twice")
 }
 
-// TestReviewLoopWorkflow tests the review → fix → review pattern.
+// TestReviewLoopWorkflow tests the review -> fix -> review pattern.
 func TestReviewLoopWorkflow(t *testing.T) {
 	repoPath := setupTempRepo(t)
 
@@ -83,13 +88,13 @@ func TestReviewLoopWorkflow(t *testing.T) {
 	fixCount := 0
 
 	// Custom review node that fails first, passes second time
-	customReview := func(ctx flowgraph.Context, state devflow.DevState) (devflow.DevState, error) {
+	customReview := func(ctx flowgraph.Context, state workflow.State) (workflow.State, error) {
 		reviewCount++
-		state.Review = &devflow.ReviewResult{
+		state.Review = &artifact.ReviewResult{
 			Approved: reviewCount >= 2, // Pass on second review
 		}
 		if reviewCount < 2 {
-			state.Review.Findings = []devflow.ReviewFinding{
+			state.Review.Findings = []artifact.ReviewFinding{
 				{
 					Severity: "warning",
 					Message:  "Missing error handling",
@@ -102,21 +107,21 @@ func TestReviewLoopWorkflow(t *testing.T) {
 	}
 
 	// Custom fix node
-	customFix := func(ctx flowgraph.Context, state devflow.DevState) (devflow.DevState, error) {
+	customFix := func(ctx flowgraph.Context, state workflow.State) (workflow.State, error) {
 		fixCount++
 		state.Implementation += "\n// Fixed!"
 		return state, nil
 	}
 
 	// Router: if review failed, go to fix; otherwise end
-	router := func(ctx flowgraph.Context, state devflow.DevState) string {
+	router := func(ctx flowgraph.Context, state workflow.State) string {
 		if state.Review != nil && !state.Review.Approved {
 			return "fix"
 		}
 		return flowgraph.END
 	}
 
-	graph := flowgraph.NewGraph[devflow.DevState]().
+	graph := flowgraph.NewGraph[workflow.State]().
 		AddNode("review", customReview).
 		AddNode("fix", customFix).
 		AddConditionalEdge("review", router).
@@ -127,7 +132,7 @@ func TestReviewLoopWorkflow(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := setupContext(t, repoPath, nil)
-	state := devflow.NewDevState("review-loop")
+	state := workflow.NewState("review-loop")
 	state.Implementation = "package main"
 
 	result, err := compiled.Run(ctx, state)
@@ -145,26 +150,26 @@ func TestNotificationWorkflow(t *testing.T) {
 	repoPath := setupTempRepo(t)
 
 	// Capture notifications
-	var captured []devflow.NotificationEvent
+	var captured []notify.Event
 	captureNotifier := &notificationCapture{events: &captured}
 
 	// Setup context with notifier
 	baseCtx := context.Background()
-	baseCtx = devflow.WithNotifier(baseCtx, captureNotifier)
+	baseCtx = notify.WithNotifier(baseCtx, captureNotifier)
 
-	git, err := devflow.NewGitContext(repoPath)
+	gitCtx, err := git.NewContext(repoPath)
 	require.NoError(t, err)
-	baseCtx = devflow.WithGitContext(baseCtx, git)
+	baseCtx = devcontext.WithGit(baseCtx, gitCtx)
 
 	ctx := flowgraph.NewContext(baseCtx)
 
 	// Build graph with notification
-	graph := flowgraph.NewGraph[devflow.DevState]().
-		AddNode("work", func(ctx flowgraph.Context, state devflow.DevState) (devflow.DevState, error) {
+	graph := flowgraph.NewGraph[workflow.State]().
+		AddNode("work", func(ctx flowgraph.Context, state workflow.State) (workflow.State, error) {
 			state.Spec = "Work completed"
 			return state, nil
 		}).
-		AddNode("notify", devflow.NotifyNode).
+		AddNode("notify", workflow.NotifyNode).
 		AddEdge("work", "notify").
 		AddEdge("notify", flowgraph.END).
 		SetEntry("work")
@@ -172,13 +177,13 @@ func TestNotificationWorkflow(t *testing.T) {
 	compiled, err := graph.Compile()
 	require.NoError(t, err)
 
-	state := devflow.NewDevState("notify-test")
+	state := workflow.NewState("notify-test")
 	_, err = compiled.Run(ctx, state)
 	require.NoError(t, err)
 
 	// Verify notification was sent
 	assert.Len(t, captured, 1, "should capture one notification")
-	assert.Equal(t, devflow.EventRunCompleted, captured[0].Type)
+	assert.Equal(t, notify.EventRunCompleted, captured[0].Type)
 }
 
 // TestTranscriptRecording tests that transcript recording works with workflows.
@@ -187,32 +192,32 @@ func TestTranscriptRecording(t *testing.T) {
 
 	// Setup transcript manager
 	transcriptDir := filepath.Join(repoPath, ".devflow", "transcripts")
-	manager, err := devflow.NewTranscriptManager(devflow.TranscriptConfig{
+	manager, err := transcript.NewFileStore(transcript.StoreConfig{
 		BaseDir: transcriptDir,
 	})
 	require.NoError(t, err)
 
 	// Start a run
 	runID := "transcript-test-run"
-	err = manager.StartRun(runID, devflow.RunMetadata{FlowID: "test"})
+	err = manager.StartRun(runID, transcript.RunMetadata{FlowID: "test"})
 	require.NoError(t, err)
 
 	// Setup context with transcript manager
 	baseCtx := context.Background()
-	baseCtx = devflow.WithTranscriptManager(baseCtx, manager)
+	baseCtx = devcontext.WithTranscript(baseCtx, manager)
 
 	ctx := flowgraph.NewContext(baseCtx)
 
 	// Wrap node with transcript recording
-	recordingNode := flowgraph.NodeFunc[devflow.DevState](devflow.WithTranscript(
-		func(ctx flowgraph.Context, state devflow.DevState) (devflow.DevState, error) {
+	recordingNode := flowgraph.NodeFunc[workflow.State](workflow.WithTranscript(
+		func(ctx flowgraph.Context, state workflow.State) (workflow.State, error) {
 			state.Spec = "Generated specification"
 			return state, nil
 		},
 		"generate-spec",
 	))
 
-	graph := flowgraph.NewGraph[devflow.DevState]().
+	graph := flowgraph.NewGraph[workflow.State]().
 		AddNode("spec", recordingNode).
 		AddEdge("spec", flowgraph.END).
 		SetEntry("spec")
@@ -220,23 +225,23 @@ func TestTranscriptRecording(t *testing.T) {
 	compiled, err := graph.Compile()
 	require.NoError(t, err)
 
-	state := devflow.NewDevState("test")
+	state := workflow.NewState("test")
 	state.RunID = runID
 
 	_, err = compiled.Run(ctx, state)
 	require.NoError(t, err)
 
 	// End the run
-	err = manager.EndRun(runID, devflow.RunStatusCompleted)
+	err = manager.EndRun(runID, transcript.RunStatusCompleted)
 	require.NoError(t, err)
 
 	// Load and view the transcript
-	transcript, err := manager.Load(runID)
+	tr, err := manager.Load(runID)
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
-	viewer := devflow.NewTranscriptViewer(false) // no color for test
-	err = viewer.ViewFull(&buf, transcript)
+	viewer := transcript.NewViewer(false) // no color for test
+	err = viewer.ViewFull(&buf, tr)
 	require.NoError(t, err)
 	assert.NotEmpty(t, buf.String(), "transcript should have content")
 }
@@ -247,23 +252,23 @@ func TestArtifactStorage(t *testing.T) {
 
 	// Setup artifact manager
 	artifactDir := filepath.Join(repoPath, ".devflow", "artifacts")
-	manager := devflow.NewArtifactManager(devflow.ArtifactConfig{
+	manager := artifact.NewManager(artifact.Config{
 		BaseDir: artifactDir,
 	})
 
 	// Setup context with artifact manager
 	baseCtx := context.Background()
-	baseCtx = devflow.WithArtifactManager(baseCtx, manager)
-	baseCtx = devflow.WithCommandRunner(baseCtx, devflow.NewMockRunner())
+	baseCtx = devcontext.WithArtifact(baseCtx, manager)
+	baseCtx = devcontext.WithRunner(baseCtx, git.NewMockRunner())
 
 	ctx := flowgraph.NewContext(baseCtx)
 
 	// RunTestsNode saves test output as artifact
-	state := devflow.NewDevState("artifact-test")
+	state := workflow.NewState("artifact-test")
 	state.RunID = "artifact-run-123"
 	state.Worktree = repoPath
 
-	result, err := devflow.RunTestsNode(ctx, state)
+	result, err := workflow.RunTestsNode(ctx, state)
 	require.NoError(t, err)
 
 	// Verify test output is in state
@@ -319,10 +324,10 @@ func TestMockClientWithCompleteFunc(t *testing.T) {
 
 // notificationCapture captures notifications for testing.
 type notificationCapture struct {
-	events *[]devflow.NotificationEvent
+	events *[]notify.Event
 }
 
-func (n *notificationCapture) Notify(ctx context.Context, event devflow.NotificationEvent) error {
+func (n *notificationCapture) Notify(ctx context.Context, event notify.Event) error {
 	*n.events = append(*n.events, event)
 	return nil
 }
