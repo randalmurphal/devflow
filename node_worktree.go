@@ -1,15 +1,16 @@
 package devflow
 
 import (
-	"context"
 	"fmt"
+
+	"github.com/rmurphy/flowgraph/pkg/flowgraph"
 )
 
 // CreateWorktreeNode creates an isolated git worktree for the task.
 //
 // Prerequisites: state.TicketID or state.Branch must be set
 // Updates: state.Worktree, state.Branch
-func CreateWorktreeNode(ctx context.Context, state DevState) (DevState, error) {
+func CreateWorktreeNode(ctx flowgraph.Context, state DevState) (DevState, error) {
 	git := GitFromContext(ctx)
 	if git == nil {
 		return state, fmt.Errorf("GitContext not found in context")
@@ -50,7 +51,7 @@ func CreateWorktreeNode(ctx context.Context, state DevState) (DevState, error) {
 //
 // Prerequisites: state.Worktree must be set
 // Updates: clears state.Worktree
-func CleanupNode(ctx context.Context, state DevState) (DevState, error) {
+func CleanupNode(ctx flowgraph.Context, state DevState) (DevState, error) {
 	if state.Worktree == "" {
 		return state, nil // Nothing to clean
 	}

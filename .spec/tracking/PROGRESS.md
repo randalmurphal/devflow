@@ -119,7 +119,7 @@
 
 | Task | Status | File | Notes |
 |------|--------|------|-------|
-| Go module initialization | Complete | `go.mod` | github.com/anthropic/devflow |
+| Go module initialization | Complete | `go.mod` | github.com/rmurphy/devflow |
 | Error definitions | Complete | `errors.go` | Git + PR errors |
 | GitContext constructor | Complete | `git.go:25-50` | With functional options |
 | Basic git operations | Complete | `git.go:80-280` | Branch, commit, push, diff, status |

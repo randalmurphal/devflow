@@ -1,9 +1,10 @@
 package devflow
 
 import (
-	"context"
 	"strings"
 	"time"
+
+	"github.com/rmurphy/flowgraph/pkg/flowgraph"
 )
 
 // DefaultTestCommand is the default command used to run tests.
@@ -16,7 +17,7 @@ const DefaultTestCommand = "go test -race ./..."
 //
 // The node uses CommandRunner from context if available, otherwise falls back
 // to ExecRunner. This allows for easy testing with MockRunner.
-func RunTestsNode(ctx context.Context, state DevState) (DevState, error) {
+func RunTestsNode(ctx flowgraph.Context, state DevState) (DevState, error) {
 	if err := state.Validate(RequireWorktree); err != nil {
 		return state, err
 	}

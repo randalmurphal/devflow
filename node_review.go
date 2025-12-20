@@ -1,11 +1,11 @@
 package devflow
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/rmurphy/flowgraph/pkg/flowgraph"
 	"github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
 )
 
@@ -13,7 +13,7 @@ import (
 //
 // Prerequisites: state.Spec or state.Implementation must be set
 // Updates: state.Review, state.ReviewAttempts, state.ReviewTokensIn/Out
-func ReviewNode(ctx context.Context, state DevState) (DevState, error) {
+func ReviewNode(ctx flowgraph.Context, state DevState) (DevState, error) {
 	client := LLMFromContext(ctx)
 	if client == nil {
 		return state, fmt.Errorf("llm.Client not found in context")
@@ -86,7 +86,7 @@ func ReviewNode(ctx context.Context, state DevState) (DevState, error) {
 //
 // Prerequisites: state.Review with findings, state.Worktree
 // Updates: state.Implementation, state.Files
-func FixFindingsNode(ctx context.Context, state DevState) (DevState, error) {
+func FixFindingsNode(ctx flowgraph.Context, state DevState) (DevState, error) {
 	if err := state.Validate(RequireReview, RequireWorktree); err != nil {
 		return state, err
 	}

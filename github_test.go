@@ -84,8 +84,8 @@ func TestNewGitHubProviderFromURL(t *testing.T) {
 	}{
 		{
 			name:      "https URL",
-			url:       "https://github.com/anthropic/devflow.git",
-			wantOwner: "anthropic",
+			url:       "https://github.com/rmurphy/devflow.git",
+			wantOwner: "rmurphy",
 			wantRepo:  "devflow",
 		},
 		{

@@ -1,10 +1,11 @@
 package devflow
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/rmurphy/flowgraph/pkg/flowgraph"
 )
 
 // DefaultLintCommand is the default command used to run linting.
@@ -17,7 +18,7 @@ const DefaultLintCommand = "go vet ./..."
 //
 // The node uses CommandRunner from context if available, otherwise falls back
 // to ExecRunner. This allows for easy testing with MockRunner.
-func CheckLintNode(ctx context.Context, state DevState) (DevState, error) {
+func CheckLintNode(ctx flowgraph.Context, state DevState) (DevState, error) {
 	if err := state.Validate(RequireWorktree); err != nil {
 		return state, err
 	}

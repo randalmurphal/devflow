@@ -1,9 +1,9 @@
 # devflow
 
-[![CI](https://github.com/anthropic/devflow/actions/workflows/ci.yml/badge.svg)](https://github.com/anthropic/devflow/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/anthropic/devflow.svg)](https://pkg.go.dev/github.com/anthropic/devflow)
-[![Go Report Card](https://goreportcard.com/badge/github.com/anthropic/devflow)](https://goreportcard.com/report/github.com/anthropic/devflow)
-[![Coverage](https://img.shields.io/badge/coverage-83%25-brightgreen)](https://github.com/anthropic/devflow)
+[![CI](https://github.com/rmurphy/devflow/actions/workflows/ci.yml/badge.svg)](https://github.com/rmurphy/devflow/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/rmurphy/devflow.svg)](https://pkg.go.dev/github.com/rmurphy/devflow)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rmurphy/devflow)](https://goreportcard.com/report/github.com/rmurphy/devflow)
+[![Coverage](https://img.shields.io/badge/coverage-83%25-brightgreen)](https://github.com/rmurphy/devflow)
 
 **Development workflow primitives for AI-powered automation.** Git operations, LLM integration via flowgraph, transcript management, artifact storage, and notifications.
 
@@ -19,7 +19,7 @@
 ## Installation
 
 ```bash
-go get github.com/anthropic/devflow
+go get github.com/rmurphy/devflow
 ```
 
 **Note:** devflow depends on [flowgraph](https://github.com/rmurphy/flowgraph) for graph orchestration and LLM abstraction.
@@ -33,7 +33,7 @@ package main
 
 import (
     "fmt"
-    "github.com/anthropic/devflow"
+    "github.com/rmurphy/devflow"
 )
 
 func main() {
@@ -71,7 +71,7 @@ import (
     "context"
     "fmt"
 
-    "github.com/anthropic/devflow"
+    "github.com/rmurphy/devflow"
     "github.com/rmurphy/flowgraph"
     "github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
 )

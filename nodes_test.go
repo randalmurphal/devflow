@@ -6,8 +6,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rmurphy/flowgraph/pkg/flowgraph"
 	"github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
 )
+
+// testContext creates a flowgraph.Context for use in tests.
+// For tests that need service injection, use testContextWith pattern instead.
+func testContext() flowgraph.Context {
+	return flowgraph.NewContext(context.Background())
+}
+
+// wrapContext wraps a context.Context (with injected services) into a flowgraph.Context
+func wrapContext(ctx context.Context) flowgraph.Context {
+	return flowgraph.NewContext(ctx)
+}
 
 // =============================================================================
 // State Tests
@@ -272,7 +284,7 @@ func TestContextInjection(t *testing.T) {
 }
 
 func TestMustFromContext_Panics(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 
 	t.Run("MustGitFromContext panics", func(t *testing.T) {
 		defer func() {
@@ -324,7 +336,7 @@ func TestDevServices_InjectAll(t *testing.T) {
 // =============================================================================
 
 func TestCreateWorktreeNode_MissingGit(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 	state := NewDevState("test")
 
 	_, err := CreateWorktreeNode(ctx, state)
@@ -334,7 +346,7 @@ func TestCreateWorktreeNode_MissingGit(t *testing.T) {
 }
 
 func TestGenerateSpecNode_MissingTicket(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 	state := NewDevState("test")
 
 	_, err := GenerateSpecNode(ctx, state)
@@ -344,7 +356,7 @@ func TestGenerateSpecNode_MissingTicket(t *testing.T) {
 }
 
 func TestGenerateSpecNode_MissingLLM(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 	state := NewDevState("test").WithTicket(&Ticket{ID: "TK-1"})
 
 	_, err := GenerateSpecNode(ctx, state)
@@ -354,7 +366,7 @@ func TestGenerateSpecNode_MissingLLM(t *testing.T) {
 }
 
 func TestImplementNode_MissingSpec(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 	state := NewDevState("test")
 	state.Worktree = "/tmp/test"
 
@@ -365,7 +377,7 @@ func TestImplementNode_MissingSpec(t *testing.T) {
 }
 
 func TestImplementNode_MissingWorktree(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 	state := NewDevState("test")
 	state.Spec = "some spec"
 
@@ -376,9 +388,10 @@ func TestImplementNode_MissingWorktree(t *testing.T) {
 }
 
 func TestReviewNode_NoDiff(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 	client := llm.NewMockClient("test")
-	ctx = WithLLMClient(ctx, client)
+	baseCtx = WithLLMClient(baseCtx, client)
+	ctx := wrapContext(baseCtx)
 
 	state := NewDevState("test")
 	// No worktree and no implementation
@@ -390,7 +403,7 @@ func TestReviewNode_NoDiff(t *testing.T) {
 }
 
 func TestFixFindingsNode_MissingReview(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 	state := NewDevState("test")
 	state.Worktree = "/tmp/test"
 
@@ -401,7 +414,7 @@ func TestFixFindingsNode_MissingReview(t *testing.T) {
 }
 
 func TestFixFindingsNode_ApprovedReview(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 	state := NewDevState("test")
 	state.Worktree = "/tmp/test"
 	state.Review = &ReviewResult{Approved: true}
@@ -418,11 +431,12 @@ func TestFixFindingsNode_ApprovedReview(t *testing.T) {
 }
 
 func TestFixFindingsNode_WithFindings(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 
 	// Setup mock LLM client
 	mockClient := llm.NewMockClient("```go\npackage main\n\nfunc main() {\n    // Fixed the error handling\n}\n```")
-	ctx = WithLLMClient(ctx, mockClient)
+	baseCtx = WithLLMClient(baseCtx, mockClient)
+	ctx := wrapContext(baseCtx)
 
 	state := NewDevState("test-flow")
 	state.Worktree = "/tmp/test-worktree"
@@ -448,7 +462,7 @@ func TestFixFindingsNode_WithFindings(t *testing.T) {
 }
 
 func TestFixFindingsNode_MissingLLM(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 
 	state := NewDevState("test-flow")
 	state.Worktree = "/tmp/test-worktree"
@@ -461,7 +475,7 @@ func TestFixFindingsNode_MissingLLM(t *testing.T) {
 }
 
 func TestRunTestsNode_MissingWorktree(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 	state := NewDevState("test")
 
 	_, err := RunTestsNode(ctx, state)
@@ -471,13 +485,14 @@ func TestRunTestsNode_MissingWorktree(t *testing.T) {
 }
 
 func TestRunTestsNode_AllPass(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 
 	// Setup mock runner with passing tests
 	mockRunner := NewMockRunner()
 	mockRunner.OnCommand("sh", "-c", DefaultTestCommand).Return(
 		"ok  \tgithub.com/example/pkg1\t0.5s\nok  \tgithub.com/example/pkg2\t0.3s\n", nil)
-	ctx = WithCommandRunner(ctx, mockRunner)
+	baseCtx = WithCommandRunner(baseCtx, mockRunner)
+	ctx := wrapContext(baseCtx)
 
 	state := NewDevState("test-flow")
 	state.Worktree = "/tmp/test-worktree"
@@ -507,7 +522,7 @@ func TestRunTestsNode_AllPass(t *testing.T) {
 }
 
 func TestRunTestsNode_WithFailures(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 
 	// Setup mock runner with failing tests
 	mockRunner := NewMockRunner()
@@ -517,7 +532,8 @@ func TestRunTestsNode_WithFailures(t *testing.T) {
 FAIL	github.com/example/pkg1	0.5s
 ok  	github.com/example/pkg2	0.3s
 `, &CommandError{Command: "sh", Err: ErrTimeout})
-	ctx = WithCommandRunner(ctx, mockRunner)
+	baseCtx = WithCommandRunner(baseCtx, mockRunner)
+	ctx := wrapContext(baseCtx)
 
 	state := NewDevState("test-flow")
 	state.Worktree = "/tmp/test-worktree"
@@ -545,17 +561,18 @@ ok  	github.com/example/pkg2	0.3s
 }
 
 func TestRunTestsNode_WithArtifactManager(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 	tmpDir := t.TempDir()
 
 	// Setup mock runner
 	mockRunner := NewMockRunner()
 	mockRunner.OnCommand("sh", "-c", DefaultTestCommand).Return("ok  \tpkg\t0.1s\n", nil)
-	ctx = WithCommandRunner(ctx, mockRunner)
+	baseCtx = WithCommandRunner(baseCtx, mockRunner)
 
 	// Setup artifact manager
 	artifacts := NewArtifactManager(ArtifactConfig{BaseDir: tmpDir})
-	ctx = WithArtifactManager(ctx, artifacts)
+	baseCtx = WithArtifactManager(baseCtx, artifacts)
+	ctx := wrapContext(baseCtx)
 
 	state := NewDevState("test-flow")
 	state.Worktree = "/tmp/test-worktree"
@@ -572,7 +589,7 @@ func TestRunTestsNode_WithArtifactManager(t *testing.T) {
 }
 
 func TestCheckLintNode_MissingWorktree(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 	state := NewDevState("test")
 
 	_, err := CheckLintNode(ctx, state)
@@ -582,12 +599,13 @@ func TestCheckLintNode_MissingWorktree(t *testing.T) {
 }
 
 func TestCheckLintNode_NoProblem(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 
 	// Setup mock runner with clean lint output
 	mockRunner := NewMockRunner()
 	mockRunner.OnCommand("sh", "-c", DefaultLintCommand).Return("", nil)
-	ctx = WithCommandRunner(ctx, mockRunner)
+	baseCtx = WithCommandRunner(baseCtx, mockRunner)
+	ctx := wrapContext(baseCtx)
 
 	state := NewDevState("test-flow")
 	state.Worktree = "/tmp/test-worktree"
@@ -617,7 +635,7 @@ func TestCheckLintNode_NoProblem(t *testing.T) {
 }
 
 func TestCheckLintNode_WithIssues(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 
 	// Setup mock runner with lint issues
 	mockRunner := NewMockRunner()
@@ -625,7 +643,8 @@ func TestCheckLintNode_WithIssues(t *testing.T) {
 		`main.go:10:5: printf format %d has arg of wrong type
 main.go:25:3: unreachable code
 `, &CommandError{Command: "sh", Err: ErrTimeout})
-	ctx = WithCommandRunner(ctx, mockRunner)
+	baseCtx = WithCommandRunner(baseCtx, mockRunner)
+	ctx := wrapContext(baseCtx)
 
 	state := NewDevState("test-flow")
 	state.Worktree = "/tmp/test-worktree"
@@ -653,17 +672,18 @@ main.go:25:3: unreachable code
 }
 
 func TestCheckLintNode_WithArtifactManager(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 	tmpDir := t.TempDir()
 
 	// Setup mock runner
 	mockRunner := NewMockRunner()
 	mockRunner.OnCommand("sh", "-c", DefaultLintCommand).Return("", nil)
-	ctx = WithCommandRunner(ctx, mockRunner)
+	baseCtx = WithCommandRunner(baseCtx, mockRunner)
 
 	// Setup artifact manager
 	artifacts := NewArtifactManager(ArtifactConfig{BaseDir: tmpDir})
-	ctx = WithArtifactManager(ctx, artifacts)
+	baseCtx = WithArtifactManager(baseCtx, artifacts)
+	ctx := wrapContext(baseCtx)
 
 	state := NewDevState("test-flow")
 	state.Worktree = "/tmp/test-worktree"
@@ -680,7 +700,7 @@ func TestCheckLintNode_WithArtifactManager(t *testing.T) {
 }
 
 func TestCreatePRNode_MissingBranch(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 	state := NewDevState("test")
 
 	_, err := CreatePRNode(ctx, state)
@@ -690,7 +710,7 @@ func TestCreatePRNode_MissingBranch(t *testing.T) {
 }
 
 func TestCleanupNode_NoWorktree(t *testing.T) {
-	ctx := context.Background()
+	ctx := testContext()
 	state := NewDevState("test")
 	state.Worktree = "" // Empty worktree
 
@@ -709,11 +729,12 @@ func TestCleanupNode_NoWorktree(t *testing.T) {
 // =============================================================================
 
 func TestGenerateSpecNode_Success(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 
 	// Setup mock LLM client
 	mockClient := llm.NewMockClient("# Technical Specification\n\nThis is a generated spec.")
-	ctx = WithLLMClient(ctx, mockClient)
+	baseCtx = WithLLMClient(baseCtx, mockClient)
+	ctx := wrapContext(baseCtx)
 
 	// Setup state with ticket
 	state := NewDevState("test-flow")
@@ -751,11 +772,12 @@ func TestGenerateSpecNode_Success(t *testing.T) {
 }
 
 func TestImplementNode_Success(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 
 	// Setup mock LLM client
 	mockClient := llm.NewMockClient("```go\npackage main\n\nfunc main() {}\n```")
-	ctx = WithLLMClient(ctx, mockClient)
+	baseCtx = WithLLMClient(baseCtx, mockClient)
+	ctx := wrapContext(baseCtx)
 
 	// Setup state with spec and worktree
 	state := NewDevState("test-flow")
@@ -783,11 +805,12 @@ func TestImplementNode_Success(t *testing.T) {
 }
 
 func TestReviewNode_Approved(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 
 	// Setup mock LLM client - return an approval
 	mockClient := llm.NewMockClient("APPROVED\n\nThe code looks good. No issues found.")
-	ctx = WithLLMClient(ctx, mockClient)
+	baseCtx = WithLLMClient(baseCtx, mockClient)
+	ctx := wrapContext(baseCtx)
 
 	// Setup state with implementation
 	state := NewDevState("test-flow")
@@ -813,7 +836,7 @@ func TestReviewNode_Approved(t *testing.T) {
 }
 
 func TestReviewNode_WithFindings(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 
 	// Setup mock LLM client - return findings
 	reviewResponse := `NOT APPROVED
@@ -824,7 +847,8 @@ FINDINGS:
 - SUGGESTION: Consider using constants`
 
 	mockClient := llm.NewMockClient(reviewResponse)
-	ctx = WithLLMClient(ctx, mockClient)
+	baseCtx = WithLLMClient(baseCtx, mockClient)
+	ctx := wrapContext(baseCtx)
 
 	// Setup state with implementation
 	state := NewDevState("test-flow")
@@ -844,16 +868,17 @@ FINDINGS:
 }
 
 func TestGenerateSpecNode_WithPromptLoader(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 	tmpDir := t.TempDir()
 
 	// Setup mock LLM client
 	mockClient := llm.NewMockClient("# Spec from custom prompt")
-	ctx = WithLLMClient(ctx, mockClient)
+	baseCtx = WithLLMClient(baseCtx, mockClient)
 
 	// Setup prompt loader
 	loader := NewPromptLoader(tmpDir)
-	ctx = WithPromptLoader(ctx, loader)
+	baseCtx = WithPromptLoader(baseCtx, loader)
+	ctx := wrapContext(baseCtx)
 
 	// Setup state
 	state := NewDevState("test-flow")
@@ -871,16 +896,17 @@ func TestGenerateSpecNode_WithPromptLoader(t *testing.T) {
 }
 
 func TestGenerateSpecNode_WithArtifactManager(t *testing.T) {
-	ctx := context.Background()
+	baseCtx := context.Background()
 	tmpDir := t.TempDir()
 
 	// Setup mock LLM client
 	mockClient := llm.NewMockClient("# Spec to be saved")
-	ctx = WithLLMClient(ctx, mockClient)
+	baseCtx = WithLLMClient(baseCtx, mockClient)
 
 	// Setup artifact manager
 	artifacts := NewArtifactManager(ArtifactConfig{BaseDir: tmpDir})
-	ctx = WithArtifactManager(ctx, artifacts)
+	baseCtx = WithArtifactManager(baseCtx, artifacts)
+	ctx := wrapContext(baseCtx)
 
 	// Setup state
 	state := NewDevState("test-flow")
@@ -1081,7 +1107,7 @@ util.go:25:1: missing return statement
 
 func TestWithRetry(t *testing.T) {
 	attempts := 0
-	failingNode := func(ctx context.Context, state DevState) (DevState, error) {
+	failingNode := func(ctx flowgraph.Context, state DevState) (DevState, error) {
 		attempts++
 		if attempts < 3 {
 			return state, context.DeadlineExceeded
@@ -1090,7 +1116,7 @@ func TestWithRetry(t *testing.T) {
 	}
 
 	wrapped := WithRetry(failingNode, 3)
-	_, err := wrapped(context.Background(), NewDevState("test"))
+	_, err := wrapped(testContext(), NewDevState("test"))
 
 	if err != nil {
 		t.Errorf("WithRetry should succeed after retries: %v", err)
@@ -1102,12 +1128,12 @@ func TestWithRetry(t *testing.T) {
 }
 
 func TestWithRetry_Exhausted(t *testing.T) {
-	alwaysFails := func(ctx context.Context, state DevState) (DevState, error) {
+	alwaysFails := func(ctx flowgraph.Context, state DevState) (DevState, error) {
 		return state, context.DeadlineExceeded
 	}
 
 	wrapped := WithRetry(alwaysFails, 2)
-	_, err := wrapped(context.Background(), NewDevState("test"))
+	_, err := wrapped(testContext(), NewDevState("test"))
 
 	if err == nil {
 		t.Error("WithRetry should fail after exhausting retries")
@@ -1115,13 +1141,13 @@ func TestWithRetry_Exhausted(t *testing.T) {
 }
 
 func TestWithTiming(t *testing.T) {
-	slowNode := func(ctx context.Context, state DevState) (DevState, error) {
+	slowNode := func(ctx flowgraph.Context, state DevState) (DevState, error) {
 		time.Sleep(10 * time.Millisecond)
 		return state, nil
 	}
 
 	wrapped := WithTiming(slowNode)
-	_, err := wrapped(context.Background(), NewDevState("test"))
+	_, err := wrapped(testContext(), NewDevState("test"))
 
 	if err != nil {
 		t.Errorf("WithTiming should not affect node execution: %v", err)
@@ -1413,7 +1439,7 @@ func TestWithTranscript(t *testing.T) {
 
 	// Create a simple node
 	executed := false
-	simpleNode := func(ctx context.Context, state DevState) (DevState, error) {
+	simpleNode := func(ctx flowgraph.Context, state DevState) (DevState, error) {
 		executed = true
 		return state, nil
 	}
@@ -1425,7 +1451,7 @@ func TestWithTranscript(t *testing.T) {
 	state := NewDevState("test")
 	state.RunID = runID
 
-	_, err = wrapped(ctx, state)
+	_, err = wrapped(wrapContext(ctx), state)
 	if err != nil {
 		t.Fatalf("wrapped node failed: %v", err)
 	}
@@ -1450,7 +1476,7 @@ func TestWithTranscript_Error(t *testing.T) {
 
 	// Create a failing node
 	expectedErr := context.DeadlineExceeded
-	failingNode := func(ctx context.Context, state DevState) (DevState, error) {
+	failingNode := func(ctx flowgraph.Context, state DevState) (DevState, error) {
 		return state, expectedErr
 	}
 
@@ -1459,7 +1485,7 @@ func TestWithTranscript_Error(t *testing.T) {
 	state := NewDevState("test")
 	state.RunID = runID
 
-	_, err = wrapped(ctx, state)
+	_, err = wrapped(wrapContext(ctx), state)
 	if err != expectedErr {
 		t.Errorf("wrapped node should propagate error: got %v, want %v", err, expectedErr)
 	}

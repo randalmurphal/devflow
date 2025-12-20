@@ -1,10 +1,10 @@
 package devflow
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
+	"github.com/rmurphy/flowgraph/pkg/flowgraph"
 	"github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
 )
 
@@ -12,7 +12,7 @@ import (
 //
 // Prerequisites: state.Spec, state.Worktree must be set
 // Updates: state.Implementation, state.Files, state.ImplementTokensIn/Out
-func ImplementNode(ctx context.Context, state DevState) (DevState, error) {
+func ImplementNode(ctx flowgraph.Context, state DevState) (DevState, error) {
 	if err := state.Validate(RequireSpec, RequireWorktree); err != nil {
 		return state, err
 	}

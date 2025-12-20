@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/rmurphy/flowgraph/pkg/flowgraph"
 )
 
 // =============================================================================
@@ -423,7 +425,7 @@ func TestMustNotifierFromContext_Panics(t *testing.T) {
 // =============================================================================
 
 func TestNotifyNode_NoNotifier(t *testing.T) {
-	ctx := context.Background()
+	ctx := flowgraph.NewContext(context.Background())
 	state := NewDevState("test")
 
 	result, err := NotifyNode(ctx, state)
@@ -439,7 +441,8 @@ func TestNotifyNode_WithNotifier(t *testing.T) {
 	var receivedEvent NotificationEvent
 
 	notifier := &mockEventCapture{received: &receivedEvent}
-	ctx := WithNotifier(context.Background(), notifier)
+	baseCtx := WithNotifier(context.Background(), notifier)
+	ctx := flowgraph.NewContext(baseCtx)
 
 	state := NewDevState("test-flow")
 	state.TicketID = "TK-123"

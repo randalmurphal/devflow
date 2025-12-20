@@ -1,11 +1,11 @@
 package devflow
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/rmurphy/flowgraph/pkg/flowgraph"
 	"github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
 )
 
@@ -13,7 +13,7 @@ import (
 //
 // Prerequisites: state.Ticket must be set
 // Updates: state.Spec, state.SpecTokensIn/Out, state.SpecGeneratedAt
-func GenerateSpecNode(ctx context.Context, state DevState) (DevState, error) {
+func GenerateSpecNode(ctx flowgraph.Context, state DevState) (DevState, error) {
 	if err := state.Validate(RequireTicket); err != nil {
 		return state, err
 	}

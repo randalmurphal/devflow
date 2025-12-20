@@ -225,7 +225,7 @@ devflow now uses flowgraph's LLM abstraction layer. Nodes use `llm.Client` inter
 import (
     "github.com/rmurphy/flowgraph"
     "github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
-    "github.com/anthropic/devflow"
+    "github.com/rmurphy/devflow"
 )
 
 // Create LLM client from flowgraph

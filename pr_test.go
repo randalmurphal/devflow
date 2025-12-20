@@ -231,11 +231,11 @@ func TestParseRepoFromURL(t *testing.T) {
 		wantErr   bool
 	}{
 		// HTTPS URLs
-		{"https://github.com/anthropic/devflow.git", "anthropic", "devflow", false},
-		{"https://github.com/anthropic/devflow", "anthropic", "devflow", false},
+		{"https://github.com/rmurphy/devflow.git", "rmurphy", "devflow", false},
+		{"https://github.com/rmurphy/devflow", "rmurphy", "devflow", false},
 		{"https://gitlab.com/namespace/project.git", "namespace", "project", false},
 		// SSH URLs
-		{"git@github.com:anthropic/devflow.git", "anthropic", "devflow", false},
+		{"git@github.com:rmurphy/devflow.git", "rmurphy", "devflow", false},
 		{"git@gitlab.com:namespace/project.git", "namespace", "project", false},
 		// Invalid URLs
 		{"invalid", "", "", true},

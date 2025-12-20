@@ -1,10 +1,11 @@
 package devflow
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"time"
+
+	"github.com/rmurphy/flowgraph/pkg/flowgraph"
 )
 
 // =============================================================================
@@ -13,7 +14,7 @@ import (
 
 // NodeFunc is a function that processes state and returns updated state.
 // This signature is compatible with flowgraph's NodeFunc[DevState].
-type NodeFunc func(ctx context.Context, state DevState) (DevState, error)
+type NodeFunc func(ctx flowgraph.Context, state DevState) (DevState, error)
 
 // NodeConfig configures node behavior
 type NodeConfig struct {
@@ -39,7 +40,7 @@ func DefaultNodeConfig() NodeConfig {
 
 // WithRetry wraps a node with retry logic
 func WithRetry(node NodeFunc, maxRetries int) NodeFunc {
-	return func(ctx context.Context, state DevState) (DevState, error) {
+	return func(ctx flowgraph.Context, state DevState) (DevState, error) {
 		var lastErr error
 		for i := 0; i < maxRetries; i++ {
 			result, err := node(ctx, state)
@@ -55,7 +56,7 @@ func WithRetry(node NodeFunc, maxRetries int) NodeFunc {
 
 // WithTranscript wraps a node with transcript recording
 func WithTranscript(node NodeFunc, nodeName string) NodeFunc {
-	return func(ctx context.Context, state DevState) (DevState, error) {
+	return func(ctx flowgraph.Context, state DevState) (DevState, error) {
 		mgr := TranscriptManagerFromContext(ctx)
 
 		startTime := time.Now()
@@ -80,7 +81,7 @@ func WithTranscript(node NodeFunc, nodeName string) NodeFunc {
 
 // WithTiming wraps a node with timing metrics
 func WithTiming(node NodeFunc) NodeFunc {
-	return func(ctx context.Context, state DevState) (DevState, error) {
+	return func(ctx flowgraph.Context, state DevState) (DevState, error) {
 		start := time.Now()
 		result, err := node(ctx, state)
 		duration := time.Since(start)

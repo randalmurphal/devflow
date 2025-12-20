@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/rmurphy/flowgraph/pkg/flowgraph"
 )
 
 // =============================================================================
@@ -387,7 +389,7 @@ func MustNotifierFromContext(ctx context.Context) Notifier {
 
 // NotifyNode sends a notification based on current state.
 // If no notifier is configured in context, this is a no-op.
-func NotifyNode(ctx context.Context, state DevState) (DevState, error) {
+func NotifyNode(ctx flowgraph.Context, state DevState) (DevState, error) {
 	notifier := NotifierFromContext(ctx)
 	if notifier == nil {
 		return state, nil // No-op if no notifier

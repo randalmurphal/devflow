@@ -1,16 +1,17 @@
 package devflow
 
 import (
-	"context"
 	"fmt"
 	"time"
+
+	"github.com/rmurphy/flowgraph/pkg/flowgraph"
 )
 
 // CreatePRNode creates a pull request.
 //
 // Prerequisites: state.Branch must be set and pushed
 // Updates: state.PR, state.PRCreated
-func CreatePRNode(ctx context.Context, state DevState) (DevState, error) {
+func CreatePRNode(ctx flowgraph.Context, state DevState) (DevState, error) {
 	if err := state.Validate(RequireBranch); err != nil {
 		return state, err
 	}
@@ -47,7 +48,7 @@ func CreatePRNode(ctx context.Context, state DevState) (DevState, error) {
 }
 
 // commitChanges commits any uncommitted changes
-func commitChanges(ctx context.Context, git *GitContext, state DevState) error {
+func commitChanges(ctx flowgraph.Context, git *GitContext, state DevState) error {
 	// Check for changes
 	status, err := git.Status()
 	if err != nil {
