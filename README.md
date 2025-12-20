@@ -10,7 +10,7 @@
 ## Features
 
 - **Git Operations** - Worktrees, commits, branches, PRs (GitHub & GitLab)
-- **LLM Integration** - Uses [flowgraph](https://github.com/rmurphy/flowgraph)'s `llm.Client` interface
+- **LLM Integration** - Uses [flowgraph](https://github.com/randalmurphal/flowgraph)'s `llm.Client` interface
 - **Transcripts** - Record, search, and export AI conversations
 - **Artifacts** - Store and manage workflow outputs with lifecycle management
 - **Notifications** - Slack, webhook, and logging integrations
@@ -22,7 +22,7 @@
 go get github.com/randalmurphal/devflow
 ```
 
-**Note:** devflow depends on [flowgraph](https://github.com/rmurphy/flowgraph) for graph orchestration and LLM abstraction.
+**Note:** devflow depends on [flowgraph](https://github.com/randalmurphal/flowgraph) for graph orchestration and LLM abstraction.
 
 ## Quick Start
 
@@ -72,8 +72,8 @@ import (
     "fmt"
 
     "github.com/randalmurphal/devflow"
-    "github.com/rmurphy/flowgraph"
-    "github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
+    "github.com/randalmurphal/flowgraph"
+    "github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
 )
 
 func main() {
@@ -218,7 +218,7 @@ devflow is the middle layer of a three-layer ecosystem:
 
 | Layer | Repo | Purpose |
 |-------|------|---------|
-| flowgraph | [github.com/rmurphy/flowgraph](https://github.com/rmurphy/flowgraph) | Graph orchestration engine + LLM abstraction |
+| flowgraph | [github.com/randalmurphal/flowgraph](https://github.com/randalmurphal/flowgraph) | Graph orchestration engine + LLM abstraction |
 | **devflow** | This repo | Dev workflow primitives |
 | task-keeper | Commercial | SaaS product built on devflow |
 
