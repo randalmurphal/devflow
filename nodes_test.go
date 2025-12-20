@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rmurphy/flowgraph/pkg/flowgraph"
-	"github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
 )
 
 // testContext creates a flowgraph.Context for use in tests.

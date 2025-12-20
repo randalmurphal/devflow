@@ -1,9 +1,9 @@
-module github.com/rmurphy/devflow/integrationtest
+module github.com/randalmurphal/devflow/integrationtest
 
 go 1.24.0
 
 require (
-	github.com/rmurphy/devflow v0.1.0
+	github.com/randalmurphal/devflow v0.1.0
 	github.com/rmurphy/flowgraph v0.1.0
 	github.com/stretchr/testify v1.11.1
 )
@@ -41,6 +41,6 @@ require (
 
 // Use local versions during development
 replace (
-	github.com/rmurphy/devflow => ../
+	github.com/randalmurphal/devflow => ../
 	github.com/rmurphy/flowgraph => ../../flowgraph
 )

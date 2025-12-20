@@ -19,7 +19,7 @@ linters:
 
 linters-settings:
   goimports:
-    local-prefixes: github.com/rmurphy/devflow
+    local-prefixes: github.com/randalmurphal/devflow
 
   revive:
     rules:

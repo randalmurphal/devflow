@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rmurphy/flowgraph/pkg/flowgraph"
-	"github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
 )
 
 // ImplementNode implements code based on the specification.

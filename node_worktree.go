@@ -3,7 +3,7 @@ package devflow
 import (
 	"fmt"
 
-	"github.com/rmurphy/flowgraph/pkg/flowgraph"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
 )
 
 // CreateWorktreeNode creates an isolated git worktree for the task.

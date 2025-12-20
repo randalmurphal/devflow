@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
 )
 
 // Tests for context.go functionality not already covered in nodes_test.go or claude_test.go

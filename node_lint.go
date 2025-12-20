@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rmurphy/flowgraph/pkg/flowgraph"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
 )
 
 // DefaultLintCommand is the default command used to run linting.

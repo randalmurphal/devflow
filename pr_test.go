@@ -231,8 +231,8 @@ func TestParseRepoFromURL(t *testing.T) {
 		wantErr   bool
 	}{
 		// HTTPS URLs
-		{"https://github.com/rmurphy/devflow.git", "rmurphy", "devflow", false},
-		{"https://github.com/rmurphy/devflow", "rmurphy", "devflow", false},
+		{"https://github.com/randalmurphal/devflow.git", "rmurphy", "devflow", false},
+		{"https://github.com/randalmurphal/devflow", "rmurphy", "devflow", false},
 		{"https://gitlab.com/namespace/project.git", "namespace", "project", false},
 		// SSH URLs
 		{"git@github.com:rmurphy/devflow.git", "rmurphy", "devflow", false},

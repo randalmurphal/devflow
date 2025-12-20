@@ -41,7 +41,7 @@ func NewGitHubProvider(token, owner, repo string) (*GitHubProvider, error) {
 }
 
 // NewGitHubProviderFromURL creates a GitHub provider from a remote URL.
-// Example: "https://github.com/rmurphy/devflow.git"
+// Example: "https://github.com/randalmurphal/devflow.git"
 func NewGitHubProviderFromURL(token, remoteURL string) (*GitHubProvider, error) {
 	owner, repo, err := ParseRepoFromURL(remoteURL)
 	if err != nil {

@@ -1,7 +1,7 @@
 package devflow
 
 import (
-	"github.com/rmurphy/flowgraph/pkg/flowgraph/model"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph/model"
 )
 
 // TaskType represents the type of task an agent is performing.

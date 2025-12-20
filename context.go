@@ -3,7 +3,7 @@ package devflow
 import (
 	"context"
 
-	"github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
 )
 
 // =============================================================================

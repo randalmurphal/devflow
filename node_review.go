@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rmurphy/flowgraph/pkg/flowgraph"
-	"github.com/rmurphy/flowgraph/pkg/flowgraph/llm"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
 )
 
 // ReviewNode reviews implementation for issues.

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/rmurphy/flowgraph/pkg/flowgraph"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
 )
 
 // =============================================================================

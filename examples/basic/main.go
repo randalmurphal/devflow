@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/rmurphy/devflow"
+	"github.com/randalmurphal/devflow"
 )
 
 func main() {

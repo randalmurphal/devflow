@@ -3,7 +3,7 @@ package devflow
 import (
 	"testing"
 
-	"github.com/rmurphy/flowgraph/pkg/flowgraph/model"
+	"github.com/randalmurphal/flowgraph/pkg/flowgraph/model"
 )
 
 func TestTierForTask(t *testing.T) {
