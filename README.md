@@ -11,7 +11,6 @@
 
 - **Git Operations** - Worktrees, commits, branches, PRs (GitHub & GitLab)
 - **LLM Integration** - Uses [flowgraph](https://github.com/randalmurphal/flowgraph)'s `llm.Client` interface
-- **LLM Utilities** - Token counting, text truncation, prompt templates, response parsing
 - **Transcripts** - Record, search, and export AI conversations
 - **Artifacts** - Store and manage workflow outputs with lifecycle management
 - **Notifications** - Slack, webhook, and logging integrations
@@ -227,14 +226,9 @@ github.com/randalmurphal/devflow/
 ├── context/       # Context injection helpers
 ├── git/           # Git operations (worktrees, commits, branches)
 ├── http/          # HTTP client with connection pooling
-├── llm/           # LLM utilities
-│   ├── parser/    # Response parsing (JSON, YAML, code blocks)
-│   ├── template/  # Prompt template engine (Handlebars-style)
-│   ├── tokens/    # Token counting and budget management
-│   └── truncate/  # Text truncation strategies
 ├── notify/        # Notifications (Slack, webhooks)
 ├── pr/            # Pull request operations (GitHub, GitLab)
-├── prompt/        # Prompt loading
+├── prompt/        # Prompt file loading
 ├── task/          # Task primitives
 ├── testutil/      # Test utilities
 ├── transcript/    # Conversation transcripts

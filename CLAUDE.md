@@ -8,14 +8,14 @@
 devflow/
 ├── git/           # Git operations, worktrees, branches, commits
 ├── pr/            # Pull request providers (GitHub, GitLab)
-├── transcript/    # Conversation recording, search, export
 ├── artifact/      # Workflow artifact storage, lifecycle
-├── workflow/      # State, workflow nodes
+├── transcript/    # Conversation recording, search, export
 ├── notify/        # Notification services (Slack, webhook)
-├── context/       # Service dependency injection
-├── prompt/        # Prompt template loading
-├── task/          # Task-based model selection
+├── workflow/      # State, workflow nodes
+├── prompt/        # Prompt file loading
+├── task/          # Task primitives
 ├── http/          # HTTP client utilities
+├── context/       # Service dependency injection
 ├── testutil/      # Test utilities
 └── integrationtest/ # Integration tests
 ```
