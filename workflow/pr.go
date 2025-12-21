@@ -26,10 +26,8 @@ func CreatePRNode(ctx flowgraph.Context, state State) (State, error) {
 		return state, fmt.Errorf("git.Context not found in context")
 	}
 
-	// Ensure changes are committed
-	if err := commitChanges(gitCtx, state); err != nil {
-		// Not fatal - might already be committed
-	}
+	// Ensure changes are committed (not fatal - might already be committed)
+	_ = commitChanges(gitCtx, state)
 
 	// Push branch
 	if err := gitCtx.Push("origin", state.Branch, true); err != nil {

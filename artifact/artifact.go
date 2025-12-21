@@ -341,15 +341,23 @@ func (m *Manager) shouldCompress(at Type, size int64) bool {
 	return size >= m.compressAbove
 }
 
-func (m *Manager) saveCompressed(path string, data []byte) error {
+func (m *Manager) saveCompressed(path string, data []byte) (err error) {
 	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 
 	gz := gzip.NewWriter(f)
-	defer gz.Close()
+	defer func() {
+		if closeErr := gz.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 
 	_, err = gz.Write(data)
 	return err
@@ -360,13 +368,13 @@ func (m *Manager) loadCompressed(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	gz, err := gzip.NewReader(f)
 	if err != nil {
 		return nil, err
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 
 	return io.ReadAll(gz)
 }

@@ -92,4 +92,3 @@ func WithTiming(node NodeFunc) NodeFunc {
 		return result, err
 	}
 }
-

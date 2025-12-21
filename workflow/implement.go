@@ -83,4 +83,3 @@ func formatImplementPrompt(spec string, ticket *Ticket) string {
 	b.WriteString("- Update documentation if needed\n")
 	return b.String()
 }
-

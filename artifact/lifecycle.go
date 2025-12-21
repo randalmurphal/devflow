@@ -200,13 +200,9 @@ func (m *LifecycleManager) archiveRun(runID string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 
 	gz := gzip.NewWriter(f)
-	defer gz.Close()
-
 	tw := tar.NewWriter(gz)
-	defer tw.Close()
 
 	// Add all files from run directory
 	err = filepath.Walk(runDir, func(path string, info os.FileInfo, err error) error {
@@ -231,10 +227,10 @@ func (m *LifecycleManager) archiveRun(runID string) error {
 			if err != nil {
 				return err
 			}
-			defer file.Close()
-			_, err = io.Copy(tw, file)
-			if err != nil {
-				return err
+			_, copyErr := io.Copy(tw, file)
+			_ = file.Close() // Read-only, error not critical
+			if copyErr != nil {
+				return copyErr
 			}
 		}
 
@@ -242,14 +238,29 @@ func (m *LifecycleManager) archiveRun(runID string) error {
 	})
 
 	if err != nil {
-		os.Remove(archivePath)
+		_ = tw.Close()
+		_ = gz.Close()
+		_ = f.Close()
+		_ = os.Remove(archivePath)
 		return err
 	}
 
-	// Close writers before removing source
-	tw.Close()
-	gz.Close()
-	f.Close()
+	// Close writers before removing source - check errors for write operations
+	if closeErr := tw.Close(); closeErr != nil {
+		_ = gz.Close()
+		_ = f.Close()
+		_ = os.Remove(archivePath)
+		return closeErr
+	}
+	if closeErr := gz.Close(); closeErr != nil {
+		_ = f.Close()
+		_ = os.Remove(archivePath)
+		return closeErr
+	}
+	if closeErr := f.Close(); closeErr != nil {
+		_ = os.Remove(archivePath)
+		return closeErr
+	}
 
 	// Remove original
 	return os.RemoveAll(runDir)
@@ -359,13 +370,13 @@ func (m *LifecycleManager) extractArchive(archivePath, destDir string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	gz, err := gzip.NewReader(f)
 	if err != nil {
 		return err
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 
 	tr := tar.NewReader(gz)
 
@@ -394,18 +405,7 @@ func (m *LifecycleManager) extractArchive(archivePath, destDir string) error {
 			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 				return err
 			}
-			out, err := os.Create(target)
-			if err != nil {
-				return err
-			}
-			if _, err := io.Copy(out, tr); err != nil {
-				out.Close()
-				return err
-			}
-			out.Close()
-
-			// Restore file permissions
-			if err := os.Chmod(target, os.FileMode(header.Mode)); err != nil {
+			if err := extractFile(target, tr, header.Mode); err != nil {
 				return err
 			}
 		}
@@ -543,4 +543,24 @@ func dirSize(path string) int64 {
 		return nil
 	})
 	return size
+}
+
+// extractFile extracts a single file from an archive with proper close error handling
+func extractFile(target string, r io.Reader, mode int64) (err error) {
+	out, err := os.Create(target)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := out.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	if _, err = io.Copy(out, r); err != nil {
+		return err
+	}
+
+	// Restore file permissions
+	return os.Chmod(target, os.FileMode(mode))
 }

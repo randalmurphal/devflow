@@ -80,4 +80,3 @@ func formatSpecPrompt(ticket *Ticket) string {
 	b.WriteString("5. Potential risks or concerns\n")
 	return b.String()
 }
-

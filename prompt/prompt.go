@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // embeddedPrompts holds default prompts embedded in the binary.
@@ -166,7 +169,7 @@ func defaultPromptFuncMap() template.FuncMap {
 		"trim":     strings.TrimSpace,
 		"upper":    strings.ToUpper,
 		"lower":    strings.ToLower,
-		"title":    strings.Title,
+		"title":    cases.Title(language.English).String,
 		"contains": strings.Contains,
 		"replace":  strings.ReplaceAll,
 		"indent":   indentString,
