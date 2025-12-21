@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/randalmurphal/devflow/notify"
@@ -38,7 +39,12 @@ func NotifyNode(ctx flowgraph.Context, state State) (State, error) {
 	}
 
 	// Notify but don't fail the workflow on notification errors
-	_ = notifier.Notify(ctx, event)
+	if notifyErr := notifier.Notify(ctx, event); notifyErr != nil {
+		slog.WarnContext(ctx, "notification failed",
+			slog.String("event_type", string(event.Type)),
+			slog.String("run_id", state.RunID),
+			slog.String("error", notifyErr.Error()))
+	}
 
 	return state, nil
 }

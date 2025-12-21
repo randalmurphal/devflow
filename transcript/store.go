@@ -3,6 +3,7 @@ package transcript
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -274,6 +275,9 @@ func (s *FileStore) List(filter ListFilter) ([]Meta, error) {
 
 		meta, err := s.LoadMetadata(entry.Name())
 		if err != nil {
+			slog.Debug("skipping transcript with unreadable metadata",
+				slog.String("entry", entry.Name()),
+				slog.String("error", err.Error()))
 			continue
 		}
 

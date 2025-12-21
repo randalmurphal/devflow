@@ -3,6 +3,7 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/randalmurphal/devflow/artifact"
@@ -28,6 +29,8 @@ func ReviewNode(ctx flowgraph.Context, state State) (State, error) {
 		var err error
 		diff, err = gitCtx.Diff("HEAD", "")
 		if err != nil {
+			slog.Warn("git diff failed, using stored implementation",
+				slog.String("error", err.Error()))
 			diff = state.Implementation // Fallback to stored implementation
 		}
 	} else {
@@ -228,4 +231,3 @@ func ReviewRouter(state State, maxAttempts int) string {
 func DefaultReviewRouter(state State) string {
 	return ReviewRouter(state, 3)
 }
-

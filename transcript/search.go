@@ -3,6 +3,7 @@ package transcript
 import (
 	"bufio"
 	"encoding/json"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -100,6 +101,8 @@ func (s *Searcher) parseRipgrepOutput(output []byte) ([]SearchResult, error) {
 		}
 
 		if err := json.Unmarshal(scanner.Bytes(), &msg); err != nil {
+			slog.Debug("skipping malformed ripgrep output",
+				slog.String("error", err.Error()))
 			continue
 		}
 
@@ -225,11 +228,17 @@ func (s *Searcher) findByMetadata(predicate func(*Meta) bool) ([]Meta, error) {
 		metaPath := filepath.Join(runsDir, entry.Name(), "metadata.json")
 		data, err := os.ReadFile(metaPath)
 		if err != nil {
+			slog.Debug("skipping transcript with unreadable metadata",
+				slog.String("path", metaPath),
+				slog.String("error", err.Error()))
 			continue
 		}
 
 		var meta Meta
 		if err := json.Unmarshal(data, &meta); err != nil {
+			slog.Debug("skipping transcript with malformed metadata",
+				slog.String("path", metaPath),
+				slog.String("error", err.Error()))
 			continue
 		}
 

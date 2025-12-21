@@ -3,6 +3,7 @@ package context
 import (
 	"bytes"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 )
@@ -87,17 +88,25 @@ func (b *ContextBuilder) AddGlob(pattern string) error {
 	for _, match := range matches {
 		relPath, err := filepath.Rel(b.workDir, match)
 		if err != nil {
+			slog.Debug("skipping file with invalid path",
+				slog.String("path", match),
+				slog.String("error", err.Error()))
 			continue
 		}
 
 		info, err := os.Stat(match)
 		if err != nil {
+			slog.Debug("skipping file with stat error",
+				slog.String("path", match),
+				slog.String("error", err.Error()))
 			continue
 		}
 
 		if !info.IsDir() {
 			if err := b.AddFile(relPath); err != nil {
-				// Skip files that can't be read
+				slog.Debug("skipping unreadable file",
+					slog.String("path", relPath),
+					slog.String("error", err.Error()))
 				continue
 			}
 		}

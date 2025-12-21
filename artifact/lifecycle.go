@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -284,6 +285,9 @@ func (m *LifecycleManager) ListArchives() ([]string, error) {
 
 	err := filepath.Walk(archiveDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			slog.Debug("skipping path during archive listing",
+				slog.String("path", path),
+				slog.String("error", err.Error()))
 			return nil // Ignore errors, just skip
 		}
 		if info.IsDir() {
