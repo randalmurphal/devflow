@@ -7,6 +7,7 @@
 ```
 devflow/
 ├── git/           # Git operations, worktrees, branches, commits
+├── git/parallel/  # Parallel worktree orchestration for fork/join workflows
 ├── pr/            # Pull request providers (GitHub, GitLab)
 ├── artifact/      # Workflow artifact storage, lifecycle
 ├── transcript/    # Conversation recording, search, export
@@ -73,6 +74,7 @@ result, _ := graph.Execute(ctx, state)
 | Package | Key Types | Purpose |
 |---------|-----------|---------|
 | `git` | `Context`, `MockRunner`, `BranchNamer` | Git repository operations |
+| `git/parallel` | `Manager`, `MergeResult`, `ConflictFile` | Parallel worktree orchestration |
 | `pr` | `Provider`, `Options`, `PullRequest` | GitHub/GitLab PR creation |
 | `transcript` | `Manager`, `FileStore`, `Searcher` | Conversation recording |
 | `artifact` | `Manager`, `ReviewResult`, `TestOutput` | Artifact storage |
@@ -81,6 +83,58 @@ result, _ := graph.Execute(ctx, state)
 | `context` | `Services`, `WithGit`, `WithLLM` | Dependency injection |
 | `prompt` | `Loader` | Template loading |
 | `task` | `Type`, `Selector` | Model selection |
+
+---
+
+## Parallel Worktree Orchestration
+
+The `git/parallel` package manages multiple git worktrees for parallel branch execution:
+
+```go
+import "github.com/randalmurphal/devflow/git/parallel"
+
+// Create manager from base repository
+mgr, err := parallel.NewManager(parallel.Config{
+    BaseRepoPath: "/path/to/repo",
+    WorktreeDir:  "/tmp/worktrees",  // Where worktrees are created
+})
+
+// Create isolated worktree for each parallel branch
+worktreePath, err := mgr.CreateBranchWorktree("branch-1", "feature-branch-1")
+worktreePath2, err := mgr.CreateBranchWorktree("branch-2", "feature-branch-2")
+
+// Get git context for a branch's worktree
+gitCtx, err := mgr.GitContextForBranch("branch-1")
+
+// Merge all branches back to base branch
+results, err := mgr.MergeBranches(ctx, parallel.MergeConfig{
+    CommitMessage: "Merge parallel branches",
+    NoFastForward: true,
+    SquashMerge:   false,
+})
+
+// Handle conflicts
+for _, result := range results {
+    if !result.Success && len(result.Conflicts) > 0 {
+        for _, conflict := range result.Conflicts {
+            // conflict.Path, conflict.Markers, conflict.OursContent, conflict.TheirsContent
+        }
+    }
+}
+
+// Resolve a conflict and continue merge
+err = mgr.ResolveConflict(conflictPath, resolvedContent)
+err = mgr.ContinueMerge("Merge with resolved conflicts")
+
+// Cleanup all worktrees when done
+err = mgr.CleanupAll()
+```
+
+**Key types:**
+- `Manager` - Orchestrates multiple worktrees for parallel execution
+- `MergeResult` - Outcome of merging a branch (success, conflicts, commit SHA)
+- `ConflictFile` - Details about a merge conflict (path, markers, both versions)
+- `MergeConfig` - Options for merge (commit message, no-ff, squash)
 
 ---
 
