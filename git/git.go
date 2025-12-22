@@ -267,6 +267,12 @@ func (g *Context) runGit(args ...string) (string, error) {
 	return g.runner.Run(g.workDir, "git", args...)
 }
 
+// RunGit executes a git command and returns stdout.
+// This is the public version of runGit for use by external packages.
+func (g *Context) RunGit(args ...string) (string, error) {
+	return g.runGit(args...)
+}
+
 // SanitizeBranchName converts a branch name to a safe directory name.
 func SanitizeBranchName(branch string) string {
 	// Replace / with -
