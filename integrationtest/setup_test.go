@@ -12,7 +12,7 @@ import (
 	"github.com/randalmurphal/devflow/git"
 	"github.com/randalmurphal/devflow/transcript"
 	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
-	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
+	"github.com/randalmurphal/llmkit/claude"
 )
 
 // setupTempRepo creates a temporary git repository for testing.
@@ -56,7 +56,7 @@ func setupTempRepo(t *testing.T) string {
 }
 
 // setupContext creates a flowgraph.Context with all devflow services configured.
-func setupContext(t *testing.T, repoPath string, mockLLM llm.Client) flowgraph.Context {
+func setupContext(t *testing.T, repoPath string, mockLLM claude.Client) flowgraph.Context {
 	t.Helper()
 
 	baseCtx := context.Background()
@@ -95,6 +95,6 @@ func setupContext(t *testing.T, repoPath string, mockLLM llm.Client) flowgraph.C
 }
 
 // mockResponses creates a MockClient with sequential responses.
-func mockResponses(responses ...string) *llm.MockClient {
-	return llm.NewMockClient("").WithResponses(responses...)
+func mockResponses(responses ...string) *claude.MockClient {
+	return claude.NewMockClient("").WithResponses(responses...)
 }

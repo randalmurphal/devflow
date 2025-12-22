@@ -9,7 +9,7 @@ import (
 	"github.com/randalmurphal/devflow/artifact"
 	devcontext "github.com/randalmurphal/devflow/context"
 	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
-	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
+	"github.com/randalmurphal/llmkit/claude"
 )
 
 // ReviewNode reviews implementation for issues.
@@ -20,7 +20,7 @@ func ReviewNode(ctx flowgraph.Context, state State) (State, error) {
 	// Get LLM client using devflow context package
 	client := devcontext.LLM(ctx)
 	if client == nil {
-		return state, fmt.Errorf("llm.Client not found in context")
+		return state, fmt.Errorf("claude.Client not found in context")
 	}
 
 	// Get diff to review
@@ -56,9 +56,9 @@ func ReviewNode(ctx flowgraph.Context, state State) (State, error) {
 	state.ReviewAttempts++
 
 	// Run LLM
-	result, err := client.Complete(ctx, llm.CompletionRequest{
+	result, err := client.Complete(ctx, claude.CompletionRequest{
 		SystemPrompt: systemPrompt,
-		Messages:     []llm.Message{{Role: llm.RoleUser, Content: prompt}},
+		Messages:     []claude.Message{{Role: claude.RoleUser, Content: prompt}},
 	})
 	if err != nil {
 		state.SetError(err)
@@ -105,7 +105,7 @@ func FixFindingsNode(ctx flowgraph.Context, state State) (State, error) {
 	// Get LLM client using devflow context package
 	client := devcontext.LLM(ctx)
 	if client == nil {
-		return state, fmt.Errorf("llm.Client not found in context")
+		return state, fmt.Errorf("claude.Client not found in context")
 	}
 
 	// Build prompt with findings
@@ -120,9 +120,9 @@ func FixFindingsNode(ctx flowgraph.Context, state State) (State, error) {
 	}
 
 	// Run LLM
-	result, err := client.Complete(ctx, llm.CompletionRequest{
+	result, err := client.Complete(ctx, claude.CompletionRequest{
 		SystemPrompt: systemPrompt,
-		Messages:     []llm.Message{{Role: llm.RoleUser, Content: prompt}},
+		Messages:     []claude.Message{{Role: claude.RoleUser, Content: prompt}},
 	})
 	if err != nil {
 		state.SetError(err)

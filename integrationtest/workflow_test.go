@@ -13,7 +13,7 @@ import (
 	"github.com/randalmurphal/devflow/transcript"
 	"github.com/randalmurphal/devflow/workflow"
 	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
-	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
+	"github.com/randalmurphal/llmkit/claude"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -283,19 +283,19 @@ func TestArtifactStorage(t *testing.T) {
 // TestMockClientUsage verifies the MockClient behavior.
 func TestMockClientUsage(t *testing.T) {
 	// Test sequential responses
-	mock := llm.NewMockClient("").WithResponses("first", "second", "third")
+	mock := claude.NewMockClient("").WithResponses("first", "second", "third")
 
-	resp1, _ := mock.Complete(context.Background(), llm.CompletionRequest{})
+	resp1, _ := mock.Complete(context.Background(), claude.CompletionRequest{})
 	assert.Equal(t, "first", resp1.Content)
 
-	resp2, _ := mock.Complete(context.Background(), llm.CompletionRequest{})
+	resp2, _ := mock.Complete(context.Background(), claude.CompletionRequest{})
 	assert.Equal(t, "second", resp2.Content)
 
-	resp3, _ := mock.Complete(context.Background(), llm.CompletionRequest{})
+	resp3, _ := mock.Complete(context.Background(), claude.CompletionRequest{})
 	assert.Equal(t, "third", resp3.Content)
 
 	// After exhausting responses, cycles back to first (modulo behavior)
-	resp4, _ := mock.Complete(context.Background(), llm.CompletionRequest{})
+	resp4, _ := mock.Complete(context.Background(), claude.CompletionRequest{})
 	assert.Equal(t, "first", resp4.Content) // cycles back
 
 	// Check call count
@@ -306,14 +306,14 @@ func TestMockClientUsage(t *testing.T) {
 func TestMockClientWithCompleteFunc(t *testing.T) {
 	var receivedPrompt string
 
-	mock := llm.NewMockClient("").WithCompleteFunc(func(ctx context.Context, req llm.CompletionRequest) (*llm.CompletionResponse, error) {
+	mock := claude.NewMockClient("").WithCompleteFunc(func(ctx context.Context, req claude.CompletionRequest) (*claude.CompletionResponse, error) {
 		receivedPrompt = req.SystemPrompt
-		return &llm.CompletionResponse{
+		return &claude.CompletionResponse{
 			Content: "Handled: " + req.SystemPrompt,
 		}, nil
 	})
 
-	resp, err := mock.Complete(context.Background(), llm.CompletionRequest{
+	resp, err := mock.Complete(context.Background(), claude.CompletionRequest{
 		SystemPrompt: "Be helpful",
 	})
 	require.NoError(t, err)

@@ -7,7 +7,7 @@ import (
 
 	devcontext "github.com/randalmurphal/devflow/context"
 	"github.com/randalmurphal/flowgraph/pkg/flowgraph"
-	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
+	"github.com/randalmurphal/llmkit/claude"
 )
 
 // GenerateSpecNode generates a technical specification from the ticket.
@@ -22,7 +22,7 @@ func GenerateSpecNode(ctx flowgraph.Context, state State) (State, error) {
 	// Get LLM client using devflow context package
 	client := devcontext.LLM(ctx)
 	if client == nil {
-		return state, fmt.Errorf("llm.Client not found in context")
+		return state, fmt.Errorf("claude.Client not found in context")
 	}
 
 	// Build prompt
@@ -37,9 +37,9 @@ func GenerateSpecNode(ctx flowgraph.Context, state State) (State, error) {
 	}
 
 	// Run LLM
-	result, err := client.Complete(ctx, llm.CompletionRequest{
+	result, err := client.Complete(ctx, claude.CompletionRequest{
 		SystemPrompt: systemPrompt,
-		Messages:     []llm.Message{{Role: llm.RoleUser, Content: prompt}},
+		Messages:     []claude.Message{{Role: claude.RoleUser, Content: prompt}},
 	})
 	if err != nil {
 		state.SetError(err)

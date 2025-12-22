@@ -8,7 +8,7 @@ import (
 	"github.com/randalmurphal/devflow/pr"
 	"github.com/randalmurphal/devflow/prompt"
 	"github.com/randalmurphal/devflow/transcript"
-	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
+	"github.com/randalmurphal/llmkit/claude"
 )
 
 // =============================================================================
@@ -54,24 +54,24 @@ func MustGit(ctx context.Context) *git.Context {
 }
 
 // WithLLM adds an LLM client to the context.
-// This uses flowgraph's llm.Client interface.
-func WithLLM(ctx context.Context, client llm.Client) context.Context {
+// This uses flowgraph's claude.Client interface.
+func WithLLM(ctx context.Context, client claude.Client) context.Context {
 	return context.WithValue(ctx, llmServiceKey, client)
 }
 
 // LLM extracts the LLM client from context.
-func LLM(ctx context.Context) llm.Client {
-	if client, ok := ctx.Value(llmServiceKey).(llm.Client); ok {
+func LLM(ctx context.Context) claude.Client {
+	if client, ok := ctx.Value(llmServiceKey).(claude.Client); ok {
 		return client
 	}
 	return nil
 }
 
 // MustLLM extracts the LLM client or panics.
-func MustLLM(ctx context.Context) llm.Client {
+func MustLLM(ctx context.Context) claude.Client {
 	client := LLM(ctx)
 	if client == nil {
-		panic("devflow/context: llm.Client not found in context")
+		panic("devflow/context: claude.Client not found in context")
 	}
 	return client
 }

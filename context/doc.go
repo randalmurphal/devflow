@@ -8,7 +8,7 @@
 //
 // Context injection functions:
 //   - WithGit/Git: Git context injection
-//   - WithLLM/LLM: LLM client injection (flowgraph llm.Client)
+//   - WithLLM/LLM: LLM client injection (flowgraph claude.Client)
 //   - WithTranscript/Transcript: Transcript manager injection
 //   - WithArtifact/Artifact: Artifact manager injection
 //   - WithNotifier/Notifier: Notifier injection

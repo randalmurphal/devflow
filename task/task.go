@@ -1,7 +1,7 @@
 package task
 
 import (
-	"github.com/randalmurphal/flowgraph/pkg/flowgraph/model"
+	"github.com/randalmurphal/llmkit/model"
 )
 
 // Type represents the type of task an agent is performing.

@@ -8,13 +8,13 @@ import (
 	"github.com/randalmurphal/devflow/notify"
 	"github.com/randalmurphal/devflow/prompt"
 	"github.com/randalmurphal/devflow/transcript"
-	"github.com/randalmurphal/flowgraph/pkg/flowgraph/llm"
+	"github.com/randalmurphal/llmkit/claude"
 )
 
 // Services wraps all devflow services for convenient initialization
 type Services struct {
 	Git         *git.Context
-	LLM         llm.Client // flowgraph llm.Client interface
+	LLM         claude.Client // flowgraph claude.Client interface
 	Transcripts transcript.Manager
 	Artifacts   *artifact.Manager
 	Prompts     *prompt.Loader
@@ -70,7 +70,7 @@ func NewServices(cfg Config) (*Services, error) {
 	}
 	s.Git = gitCtx
 
-	// Create LLM client using flowgraph's llm.ClaudeCLI
+	// Create LLM client using flowgraph's claude.ClaudeCLI
 	model := cfg.LLMModel
 	if model == "" {
 		model = "claude-sonnet-4-20250514"
@@ -79,10 +79,10 @@ func NewServices(cfg Config) (*Services, error) {
 	if workdir == "" {
 		workdir = cfg.RepoPath
 	}
-	llmClient := llm.NewClaudeCLI(
-		llm.WithModel(model),
-		llm.WithWorkdir(workdir),
-		llm.WithDangerouslySkipPermissions(), // Non-interactive mode for automation
+	llmClient := claude.NewClaudeCLI(
+		claude.WithModel(model),
+		claude.WithWorkdir(workdir),
+		claude.WithDangerouslySkipPermissions(), // Non-interactive mode for automation
 	)
 	s.LLM = llmClient
 
