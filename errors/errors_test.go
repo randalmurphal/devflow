@@ -355,6 +355,31 @@ func TestIsConnectionError(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "network unreachable",
+			err:  errors.New("network is unreachable"),
+			want: true,
+		},
+		{
+			name: "certificate error",
+			err:  errors.New("x509: certificate signed by unknown authority"),
+			want: true,
+		},
+		{
+			name: "TLS error",
+			err:  errors.New("tls: handshake failure"),
+			want: true,
+		},
+		{
+			name: "timeout",
+			err:  errors.New("connection timeout"),
+			want: true,
+		},
+		{
+			name: "deadline exceeded",
+			err:  errors.New("context deadline exceeded"),
+			want: true,
+		},
+		{
 			name: "other error",
 			err:  errors.New("some other error"),
 			want: false,
@@ -365,6 +390,43 @@ func TestIsConnectionError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IsConnectionError(tt.err); got != tt.want {
 				t.Errorf("IsConnectionError() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsProjectError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "no project linked sentinel",
+			err:  ErrNoProjectLinked,
+			want: true,
+		},
+		{
+			name: "wrapped project error",
+			err:  &CLIError{Err: ErrNoProjectLinked, Message: "test"},
+			want: true,
+		},
+		{
+			name: "other error",
+			err:  errors.New("some other error"),
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsProjectError(tt.err); got != tt.want {
+				t.Errorf("IsProjectError() = %v, want %v", got, tt.want)
 			}
 		})
 	}
