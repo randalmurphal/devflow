@@ -208,3 +208,54 @@ func argsMatch(actual, expected []string) bool {
 	}
 	return true
 }
+
+// queuedResponses holds responses to be returned in order.
+type queuedResponses struct {
+	responses []MockResponse
+	index     int
+}
+
+// SequentialMockRunner is a mock runner that returns responses in order.
+type SequentialMockRunner struct {
+	queue []MockResponse
+	index int
+	Calls []MockCall
+}
+
+// NewSequentialMockRunner creates a new SequentialMockRunner.
+func NewSequentialMockRunner() *SequentialMockRunner {
+	return &SequentialMockRunner{}
+}
+
+// AddOutput adds a response to the queue.
+func (m *SequentialMockRunner) AddOutput(stdout string, err error) *SequentialMockRunner {
+	m.queue = append(m.queue, MockResponse{Stdout: stdout, Err: err})
+	return m
+}
+
+// AddOutputError adds a response with custom error output.
+func (m *SequentialMockRunner) AddOutputError(stdout, errOutput string, err error) *SequentialMockRunner {
+	if err != nil {
+		m.queue = append(m.queue, MockResponse{Stdout: errOutput, Err: err})
+	} else {
+		m.queue = append(m.queue, MockResponse{Stdout: stdout, Err: nil})
+	}
+	return m
+}
+
+// Run implements CommandRunner for SequentialMockRunner.
+func (m *SequentialMockRunner) Run(workDir, name string, args ...string) (string, error) {
+	m.Calls = append(m.Calls, MockCall{
+		WorkDir: workDir,
+		Command: name,
+		Args:    args,
+	})
+
+	if m.index >= len(m.queue) {
+		return "", nil
+	}
+
+	resp := m.queue[m.index]
+	m.index++
+	return resp.Stdout, resp.Err
+}

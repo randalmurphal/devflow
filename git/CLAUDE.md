@@ -32,12 +32,21 @@ Git repository operations: worktrees, branches, commits, command execution.
 - `DeleteBranch(name, force)` - Delete branch
 - `BranchExists(name)` - Check if branch exists
 - `Checkout(ref)` - Switch to ref
+- `CheckoutNew(name)` - Create and checkout new branch (convenience)
+- `CheckoutNewAt(name, ref)` - Create branch at ref (convenience)
 
 **Staging & Commits:**
 - `Stage(files...)` - Add files to staging
 - `StageAll()` - Stage all changes
 - `Commit(message)` - Create commit
 - `IsClean()` - Check for uncommitted changes
+- `CommitAll(message)` - Stage all + commit, returns `*CommitResult` (convenience)
+
+**Push:**
+- `Push(remote, branch, setUpstream)` - Push to remote
+- `PushCurrent()` - Push current branch to origin, returns `*PushResult` (convenience)
+- `PushCurrentTo(remote)` - Push to specific remote (convenience)
+- `CommitAllAndPush(message)` - Full workflow, returns `*CommitAndPushResult` (convenience)
 
 **Worktrees:**
 - `CreateWorktree(branch)` - Create isolated worktree
@@ -72,14 +81,35 @@ runner.OnCommand("git", "status", "--short").Return("", nil)
 ctx, _ := git.NewContext(path, git.WithRunner(runner))
 ```
 
+## Result Types (Convenience Methods)
+
+| Type | Fields | From Method |
+|------|--------|-------------|
+| `CommitResult` | SHA, Branch, Message, Date | `CommitAll()` |
+| `PushResult` | Remote, Branch, SHA, SetUpstream, URL | `PushCurrent()` |
+| `CommitAndPushResult` | Commit, Push | `CommitAllAndPush()` |
+
+## Context Injection
+
+```go
+// Add git context to context.Context
+ctx := git.ContextWithGit(context.Background(), gitCtx)
+
+// Retrieve later
+gitCtx := git.GitFromContext(ctx)
+gitCtx := git.MustGitFromContext(ctx)  // panics if missing
+```
+
 ## File Structure
 
 ```
 git/
-├── git.go       # Context, core operations
-├── worktree.go  # Worktree operations
-├── branch.go    # BranchNamer
-├── commit.go    # CommitMessage
-├── runner.go    # CommandRunner, MockRunner
-└── errors.go    # Git-specific errors
+├── git.go             # Context, core operations
+├── convenience.go     # CommitAll, PushCurrent, etc.
+├── context_helpers.go # ContextWithGit, GitFromContext
+├── worktree.go        # Worktree operations
+├── branch.go          # BranchNamer
+├── commit.go          # CommitMessage
+├── runner.go          # CommandRunner, MockRunner, SequentialMockRunner
+└── errors.go          # Git-specific errors
 ```

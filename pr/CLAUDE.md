@@ -12,6 +12,7 @@ Pull request operations for GitHub and GitLab.
 | `Builder` | Fluent builder for PR descriptions |
 | `GitHubProvider` | GitHub implementation |
 | `GitLabProvider` | GitLab implementation |
+| `MockProvider` | Mock for testing |
 
 ## Provider Interface
 
@@ -33,7 +34,19 @@ github, err := pr.NewGitHubProvider(token, "owner", "repo")
 
 // GitLab
 gitlab, err := pr.NewGitLabProvider(token, projectID)
+
+// Auto-detect from remote URL (uses environment tokens)
+remoteURL, _ := gitCtx.GetRemoteURL("origin")
+provider, err := pr.ProviderFromEnv(remoteURL)
+
+// With explicit token
+provider, err := pr.ProviderFromEnvWithToken(remoteURL, token)
 ```
+
+**Environment variables for auto-detection:**
+- `GITHUB_TOKEN` - For GitHub repos
+- `GITLAB_TOKEN` - For GitLab repos
+- `GIT_TOKEN` - Fallback for either
 
 ## Creating Pull Requests
 
@@ -62,13 +75,38 @@ body := pr.NewBuilder().
     Build()
 ```
 
+## Context Injection
+
+```go
+// Add provider to context.Context
+ctx := pr.ContextWithProvider(context.Background(), provider)
+
+// Retrieve later
+provider := pr.ProviderFromContext(ctx)
+provider := pr.MustProviderFromContext(ctx)  // panics if missing
+```
+
+## Testing with Mock
+
+```go
+mock := &pr.MockProvider{
+    CreatePRFunc: func(ctx context.Context, opts pr.Options) (*pr.PullRequest, error) {
+        return &pr.PullRequest{ID: 42, URL: "https://example.com/pr/42"}, nil
+    },
+}
+ctx := pr.ContextWithProvider(context.Background(), mock)
+```
+
 ## File Structure
 
 ```
 pr/
-├── pr.go       # Provider interface, Options, PullRequest
-├── builder.go  # PR description builder
-├── github.go   # GitHubProvider
-├── gitlab.go   # GitLabProvider
-└── errors.go   # PR-specific errors
+├── pr.go              # Provider interface, Options, PullRequest
+├── detect.go          # ProviderFromEnv, ProviderFromEnvWithToken
+├── context_helpers.go # ContextWithProvider, ProviderFromContext
+├── builder.go         # PR description builder
+├── github.go          # GitHubProvider
+├── gitlab.go          # GitLabProvider
+├── mock.go            # MockProvider for testing
+└── errors.go          # PR-specific errors
 ```
