@@ -17,6 +17,10 @@ devflow/
 ├── task/          # Task primitives
 ├── http/          # HTTP client utilities
 ├── context/       # Service dependency injection
+├── errors/        # CLI error patterns with suggestions
+├── auth/          # JWT and API key utilities
+├── auth/ssh/      # SSH key utilities
+├── config/        # Hierarchical config resolution
 ├── testutil/      # Test utilities
 └── integrationtest/ # Integration tests
 ```
@@ -83,6 +87,10 @@ result, _ := graph.Execute(ctx, state)
 | `context` | `Services`, `WithGit`, `WithLLM` | Dependency injection |
 | `prompt` | `Loader` | Template loading |
 | `task` | `Type`, `Selector` | Model selection |
+| `errors` | `CLIError`, `ErrorMessenger` | CLI error patterns |
+| `auth` | `JWTConfig`, `APIKeyConfig` | JWT/API key auth |
+| `auth/ssh` | `KeyInfo`, `GetAgent` | SSH key utilities |
+| `config` | `Resolver`, `Resolved` | Hierarchical config |
 
 ---
 
@@ -165,6 +173,23 @@ mgr := artifact.NewManager(artifact.Config{BaseDir: dir})
 // Notifications
 import "github.com/randalmurphal/devflow/notify"
 notifier := notify.NewSlack(webhookURL)
+
+// CLI Errors with suggestions
+import deverr "github.com/randalmurphal/devflow/errors"
+err := deverr.WrapAuthError(originalErr)
+
+// JWT authentication
+import devauth "github.com/randalmurphal/devflow/auth"
+token, _ := devauth.GenerateAccessToken(cfg, "user-123")
+
+// SSH key utilities
+import devssh "github.com/randalmurphal/devflow/auth/ssh"
+keyInfo, _ := devssh.FindDefaultKey()
+
+// Hierarchical config
+import devconfig "github.com/randalmurphal/devflow/config"
+resolver := devconfig.NewResolver(devconfig.ResolverConfig{...})
+cfg := resolver.Resolve()
 ```
 
 ---
@@ -195,5 +220,9 @@ go build ./...                         # Verify compilation
 | `workflow/CLAUDE.md` | Workflow nodes and state |
 | `transcript/CLAUDE.md` | Transcript management |
 | `artifact/CLAUDE.md` | Artifact storage |
+| `errors/CLAUDE.md` | CLI error patterns |
+| `auth/CLAUDE.md` | JWT and API key auth |
+| `auth/ssh/CLAUDE.md` | SSH key utilities |
+| `config/CLAUDE.md` | Hierarchical config |
 | `docs/ARCHITECTURE.md` | Full architecture |
 | `.spec/` | Specification documents |
