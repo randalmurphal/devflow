@@ -6,7 +6,7 @@ toolchain go1.24.11
 
 require (
 	github.com/google/go-github/v57 v57.0.0
-	github.com/randalmurphal/flowgraph v0.0.0-20251222190218-f13ded306948
+	github.com/randalmurphal/flowgraph v1.1.0
 	github.com/xanzy/go-gitlab v0.115.0
 	golang.org/x/oauth2 v0.34.0
 )
@@ -28,7 +28,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	modernc.org/libc v1.66.10 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
@@ -37,10 +37,10 @@ require (
 )
 
 require (
-	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/matoous/go-nanoid/v2 v2.1.0
-	github.com/randalmurphal/llmkit v1.0.0
-	golang.org/x/crypto v0.46.0
-	golang.org/x/text v0.32.0
+	github.com/randalmurphal/llmkit v1.4.3
+	golang.org/x/crypto v0.47.0
+	golang.org/x/text v0.33.0
 	gopkg.in/yaml.v3 v3.0.1
 )
